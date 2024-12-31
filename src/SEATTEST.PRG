@@ -1,0 +1,5167 @@
+
+ DO sprogram.fxp
+ SET CURSOR OFF
+ WAIT WINDOW NOWAIT 'One moment please...'
+ SET SYSMENU OFF
+ CLEAR
+ DO setup.fxp
+ DO slvrfox.fxp
+ SET LIBRARY TO slvrfox.plb
+ m.cuRrvidmod = swSetvideo(-1)
+
+ ***** RDR MODIFIED PORTINIT ROUTINE FOLLOWS:
+ *****
+ DO poRtinit WITH .T.
+ *****
+
+ = swFlushtx(coM1)
+ = swFlushtx(coM2)
+ = swFlushtx(coM3)
+ SET LIBRARY TO iso_fox.plb ADDITIVE
+ = seTspeed(1016,11)
+ SET LIBRARY TO dspa_fox.plb ADDITIVE
+ IF inItdspa(1)<>0
+      WAIT CLEAR
+      CLEAR
+      ? 'DSPA Card failed to initialize!'
+      ? '-------------------------------'
+      ? 'The tester needs repair in order to perform testing properly.'
+      ?
+      ? 'Press any key to continue...'
+      = swRingbell()
+      = INKEY(0)
+      QUIT
+ ENDIF
+ IF adDsource(m.soUrce)<>0
+      WAIT CLEAR
+      CLEAR
+      ? 'DSPA Card failed while trying to add Source Address!'
+      ? '----------------------------------------------------'
+      ? 'The tester needs repair in order to perform testing properly.'
+      ?
+      ? 'Press any key to continue....'
+      = swRingbell()
+      = INKEY(0)
+      QUIT
+ ENDIF
+ IF adDfrm(m.soUrce)<>0
+      WAIT CLEAR
+      CLEAR
+      ? 'DSPA Card failed while trying to add Function Read Message!'
+      ? '-----------------------------------------------------------'
+      ? 'The tester needs repair in order to perform testing properly.'
+      ?
+      ? 'Press any key to continue....'
+      = swRingbell()
+      = INKEY(0)
+      QUIT
+ ENDIF
+ = seTfilter()
+ DO filename.fxp
+
+
+ IF m.cfGtypeptr=1
+      = swSetuart(1,9600,swParityev,7,1)
+ ELSE
+      = swSetuart(1,9600,swParityno,8,1)
+ ENDIF
+ m.d_Appname = 'Seat Tester Long/Short Test'
+ 
+ ***** RDR ORIGINAL VERSION NUMBER FOLLOWS:
+ *m.d_Version = 'V6.02'
+ *m.d_Revdate = 'November 04, 1999'
+ *****
+ ***** RDR NEW VERSION NUMBER FOLLOWS:
+ m.d_Version = 'v7.30'
+ m.d_Revdate = 'May 13, 2003'
+ *****
+ 
+ 
+ WAIT WINDOW NOWAIT 'Opening Databases...'
+ SELECT 0
+ USE NOUPDATE (m.cdTc) ALIAS dtC_file ORDER DTC
+ SELECT 0
+ USE NOUPDATE (m.csCp_mess) ALIAS scP_mess ORDER MESSAGENO
+ CREATE CURSOR errorlist (erRcode C (4), erRdesc C (80))
+ SELECT erRorlist
+ INDEX ON erRorlist.erRcode TAG erRcode ASCENDING
+ WAIT CLEAR
+ DO about.spr
+ DO WHILE .T.
+      = swDaltimer()
+      DO MAIN_SCR.SPR
+ ENDDO
+*
+FUNCTION chK_port
+ PARAMETER poRt, waIttime
+ IF TYPE('m.WaitTime')<>'N'
+      m.waIttime = 1
+ ENDIF
+ PRIVATE cbUf, i, nsWret
+ PUSH KEY CLEAR
+ SET CURSOR OFF
+ DIMENSION cbUf[ 11]
+ m.cbUf = ''
+ m.i = 0
+ nsWret = swCrttimer(1,(swSecond*m.waIttime))
+ DO WHILE swGtimer(1)>0
+      IF baIlout()
+           WAIT WINDOW NOWAIT 'Transmission Aborted !'
+           cbUf = 'ABORT'
+           EXIT
+      ENDIF
+      IF  .NOT. swRxempty(m.poRt)
+           m.cbUf = m.cbUf+CHR(swRxchar(m.poRt))
+      ENDIF
+ ENDDO
+ IF EMPTY(cbUf) .AND.  .NOT. m.baIlout
+      WAIT WINDOW TIMEOUT 2 'Response Not Received !'
+ ENDIF
+ WAIT CLEAR
+ SET CURSOR ON
+ = swDsytimer(1)
+ POP KEY
+ RETURN cbUf
+*
+PROCEDURE un93hton
+ = seNd_scp(un93htrlay-'ON')
+ = seNd_scp(un93igrlay-'ON')
+ RETURN
+*
+PROCEDURE un93htoff
+ = seNd_scp(un93htrlay-'OFF')
+ = seNd_scp(un93igrlay-'OFF')
+ RETURN
+*
+FUNCTION baIlout
+ PRIVATE nkEy
+ PRIVATE rvAl
+ m.nkEy = INKEY()
+ DO CASE
+      CASE m.nkEy=27
+           WAIT WINDOW NOWAIT 'Aborted!'
+           m.baIlout = .T.
+           rvAl = .T.
+      CASE m.nkEy=46
+           WAIT WINDOW NOWAIT 'Aborted!'
+           m.nkEy = INKEY()
+           WAIT WINDOW NOWAIT 'Aborted!'
+           m.baIlout = .T.
+           rvAl = .T.
+      CASE m.nkEy=4
+           m.baIlout = .T.
+           rvAl = .T.
+      CASE m.nkEy=5
+           m.baIlout = .T.
+           rvAl = .T.
+      CASE m.nkEy=19
+           m.baIlout = .T.
+           rvAl = .T.
+      CASE m.nkEy=24
+           m.baIlout = .T.
+           rvAl = .T.
+      OTHERWISE
+           rvAl = .F.
+ ENDCASE
+ RETURN rvAl
+*
+FUNCTION diSperror
+ PARAMETER whIch
+ PRIVATE frOmrow, frOmcol, toRow, toCol, chOice
+ PUSH KEY CLEAR
+ = swRingbell()
+ IF m.whIch<>0
+      SET CURSOR OFF
+      IF  .NOT. WEXIST('alertwin')
+           frOmrow = INT((SROWS()-6)/2)
+           frOmcol = INT((SCOLS()-54)/2)
+           toRow = frOmrow+6
+           toCol = frOmcol+54
+           DEFINE WINDOW alErtwin FROM frOmrow, frOmcol TO toRow, toCol  ;
+                  NOGROW FLOAT NOCLOSE NOZOOM SHADOW DOUBLE COLOR SCHEME 7
+      ENDIF
+      ACTIVATE WINDOW alErtwin
+      CLEAR
+      DO CASE
+           CASE m.whIch=1
+                @ 1, 0 SAY PADC('Error 1 !', WCOLS())
+           CASE m.whIch=2
+                @ 1, 0 SAY PADC('Error 2 !', WCOLS())
+           CASE m.whIch=3
+                @ 1, 0 SAY PADC('Error 3 !', WCOLS())
+           CASE m.whIch=4
+                @ 1, 0 SAY PADC('Error 4 !', WCOLS())
+           CASE m.whIch=5
+                @ 1, 0 SAY PADC('Error 5 !', WCOLS())
+           CASE m.whIch=6
+                @ 1, 0 SAY PADC('Error 6 !', WCOLS())
+           CASE m.whIch=7
+                @ 1, 0 SAY PADC('Error 7 !', WCOLS())
+           CASE m.whIch=8
+                @ 1, 0 SAY PADC('Error 8 !', WCOLS())
+           CASE m.whIch=9
+                @ 1, 0 SAY PADC('Error 9 !', WCOLS())
+           CASE m.whIch=10
+                @ 1, 0 SAY PADC('Bar Code Scan Error !', WCOLS())
+                @ 3, 10 SAY 'Enter Item Number:'
+                IF m.csEqenable
+                     @ 3, 29 GET m.baR_buf SIZE 1, 14 PICTURE  ;
+                       '@KXXXXXXXXXXXXXX'
+                ELSE
+                     @ 3, 29 GET m.baR_buf SIZE 1, 10 PICTURE '@KXXXXXXXXXX'
+                ENDIF
+                ON KEY LABEL ENTER CLEAR READ
+                SET CURSOR ON
+                READ CYCLE
+                DEACTIVATE WINDOW alErtwin
+                POP KEY
+                IF LASTKEY()=27 .OR. EMPTY(m.baR_buf)
+                     RETURN .T.
+                ELSE
+                     RETURN .F.
+                ENDIF
+           OTHERWISE
+                @ 1, 0 SAY PADC('Unknown Error !', WCOLS())
+      ENDCASE
+      STORE 1 TO chOice
+      @ 3, INT((WCOLS()-23)/2) GET m.chOice SIZE 1, 10, 3 FUNCTION  ;
+        '*H \<Abort;\!\?\<Continue'
+      READ CYCLE MODAL
+      SET CURSOR ON
+      DEACTIVATE WINDOW alErtwin
+      IF m.chOice=1
+           POP KEY
+           RETURN .T.
+      ENDIF
+ ENDIF
+ POP KEY
+ RETURN .F.
+*
+PROCEDURE do_help
+ PUSH KEY CLEAR
+ HELP
+ POP KEY
+ RETURN
+*
+PROCEDURE enD_all
+ WAIT WINDOW NOWAIT 'Bye !'
+ = poWerdown()
+ = swDaltimer()
+ 
+ 
+ ***** RDR MODIFIED PORTINIT ROUTINE FOLLOWS:
+ *****
+ DO poRtinit WITH .F.
+ *****
+ 
+ 
+ DO eprogram.fxp
+ IF ISBLANK(SYS(9))
+      QUIT
+ ELSE
+      CANCEL
+ ENDIF
+ RETURN
+*
+PROCEDURE siLly
+ RETURN
+*
+FUNCTION poWerup
+ WAIT WINDOW NOWAIT 'Applying Power...'
+ DO WHILE (geTscp()=-129)
+ ENDDO
+ IF seNd_scp('RELAY14ON') .AND.  .NOT. baIlout()
+      = swWait(4)
+      DO WHILE (geTscp()=-129)
+      ENDDO
+      IF seNd_scp('PORT02IN')
+           IF geTscp()=0
+                IF swBitand(m.r_Byte3,8)=0
+                     = poWerdown()
+                     IF m.auTotest
+                          = adD_err('0001')
+                     ENDIF
+                     RETURN .F.
+                ENDIF
+           ELSE
+                = poWerdown()
+                IF m.auTotest
+                     = adD_err('0007')
+                ENDIF
+                RETURN .F.
+           ENDIF
+      ELSE
+           = poWerdown()
+           IF m.auTotest
+                = adD_err('0007')
+           ENDIF
+           RETURN .F.
+      ENDIF
+ ELSE
+      = poWerdown()
+      IF m.auTotest .AND.  .NOT. m.baIlout
+           = adD_err('0007')
+      ELSE
+           IF m.baIlout
+                = adD_err('0000')
+           ENDIF
+      ENDIF
+      RETURN .F.
+ ENDIF
+ IF seNd_scp('RELAY13ON') .AND.  .NOT. baIlout()
+      = swWait(4)
+      DO WHILE (geTscp()=-129)
+      ENDDO
+      IF seNd_scp('PORT02IN')
+           IF geTscp()=0
+                IF swBitand(m.r_Byte3,4)=0
+                     = poWerdown()
+                     IF m.auTotest
+                          = adD_err('0002')
+                     ENDIF
+                     RETURN .F.
+                ENDIF
+           ELSE
+                = poWerdown()
+                IF m.auTotest
+                     = adD_err('0007')
+                ENDIF
+                RETURN .F.
+           ENDIF
+      ELSE
+           = poWerdown()
+           IF m.auTotest
+                = adD_err('0007')
+           ENDIF
+           RETURN .F.
+      ENDIF
+ ELSE
+      = poWerdown()
+      IF m.auTotest .AND.  .NOT. m.baIlout
+           = adD_err('0007')
+      ELSE
+           IF m.baIlout
+                = adD_err('0000')
+           ENDIF
+      ENDIF
+      RETURN .F.
+ ENDIF
+ IF seNd_scp('RELAY12ON') .AND.  .NOT. baIlout()
+      = swWait(4)
+      DO WHILE (geTscp()=-129)
+      ENDDO
+      IF seNd_scp('PORT02IN')
+           IF geTscp()=0
+                IF swBitand(m.r_Byte3,2)=0
+                     = poWerdown()
+                     IF m.auTotest
+                          = adD_err('0003')
+                     ENDIF
+                     RETURN .F.
+                ENDIF
+           ELSE
+                = poWerdown()
+                IF m.auTotest
+                     = adD_err('0007')
+                ENDIF
+                RETURN .F.
+           ENDIF
+      ELSE
+           = poWerdown()
+           IF m.auTotest
+                = adD_err('0007')
+           ENDIF
+           RETURN .F.
+      ENDIF
+ ELSE
+      = poWerdown()
+      IF m.auTotest .AND.  .NOT. m.baIlout
+           = adD_err('0007')
+      ELSE
+           IF m.baIlout
+                = adD_err('0000')
+           ENDIF
+      ENDIF
+      RETURN .F.
+ ENDIF
+ IF seNd_scp('RELAY11ON') .AND.  .NOT. baIlout()
+      = swWait(4)
+      DO WHILE (geTscp()=-129)
+      ENDDO
+      IF seNd_scp('PORT02IN')
+           IF geTscp()=0
+                IF swBitand(m.r_Byte3,1)=0
+                     = poWerdown()
+                     IF m.auTotest
+                          = adD_err('0004')
+                     ENDIF
+                     RETURN .F.
+                ENDIF
+           ELSE
+                = poWerdown()
+                IF m.auTotest
+                     = adD_err('0007')
+                ENDIF
+                RETURN .F.
+           ENDIF
+      ELSE
+           = poWerdown()
+           IF m.auTotest
+                = adD_err('0007')
+           ENDIF
+           RETURN .F.
+      ENDIF
+ ELSE
+      = poWerdown()
+      IF m.auTotest .AND.  .NOT. m.baIlout
+           = adD_err('0007')
+      ELSE
+           IF m.baIlout
+                = adD_err('0000')
+           ENDIF
+      ENDIF
+      RETURN .F.
+ ENDIF
+ DO CASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-74'
+           = seNd_scp('i_am_a_74')
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-145'
+           = seNd_scp('i_am_a_145')
+ ENDCASE
+ WAIT CLEAR
+ RETURN .T.
+*
+PROCEDURE poWerdown
+ WAIT WINDOW NOWAIT 'Removing power...'
+ = seNd_scp('RELAYOFFP0')
+ = seNd_scp('RELAYOFFP1')
+ DO WHILE geTscp()=0
+ ENDDO
+ WAIT CLEAR
+ RETURN
+*
+PROCEDURE meMset
+ PARAMETER chOice
+ WAIT WINDOW NOWAIT 'Memory Set '+ALLTRIM(STR(m.chOice))
+ IF UPPER(ALLTRIM(m.moDuletype))<>'FN-74' .AND.  ;
+    UPPER(ALLTRIM(m.moDuletype))<>'FN-145'
+      = seNd_iso('D1')
+      = seNd_scp('OUT01ON')
+      = swWait(4)
+      = seNd_scp('OUT01OFF')
+      DO CASE
+           CASE m.chOice=1
+                = seNd_scp('OUT02ON')
+                = swWait(4)
+                = seNd_scp('OUT02OFF')
+           CASE m.chOice=2
+                = seNd_scp('OUT03ON')
+                = swWait(4)
+                = seNd_scp('OUT03OFF')
+           CASE m.chOice=3
+                = seNd_scp('OUT02ON')
+                = seNd_scp('OUT03ON')
+                = swWait(4)
+                = seNd_scp('OUT02OFF')
+                = seNd_scp('OUT03OFF')
+      ENDCASE
+ ELSE
+      DO CASE
+           CASE m.chOice=1
+                = seNd_scp('SET_1')
+                m.meMstatus = '1'
+           CASE m.chOice=2
+                = seNd_scp('SET_2')
+                m.meMstatus = '2'
+           CASE m.chOice=3
+                = seNd_scp('SET_3')
+                m.meMstatus = '3'
+      ENDCASE
+ ENDIF
+ RETURN
+*
+PROCEDURE meMrecall
+ PARAMETER chOice
+ WAIT WINDOW NOWAIT 'Memory Recall '+ALLTRIM(STR(m.chOice))
+ IF UPPER(ALLTRIM(m.moDuletype))<>'FN-74' .AND.  ;
+    UPPER(ALLTRIM(m.moDuletype))<>'FN-145'
+      = seNd_iso('D1')
+      DO CASE
+           CASE m.chOice=1
+                = seNd_scp('OUT02ON')
+                = swWait(4)
+                = seNd_scp('OUT02OFF')
+                m.meMstatus = '1'
+           CASE m.chOice=2
+                = seNd_scp('OUT03ON')
+                = swWait(4)
+                = seNd_scp('OUT03OFF')
+                m.meMstatus = '2'
+           CASE m.chOice=3
+                = seNd_scp('OUT02ON')
+                = seNd_scp('OUT03ON')
+                = swWait(4)
+                = seNd_scp('OUT02OFF')
+                = seNd_scp('OUT03OFF')
+                m.meMstatus = '3'
+      ENDCASE
+ ELSE
+      DO CASE
+           CASE m.chOice=1
+                = seNd_scp('RECALL_C1')
+                IF UPPER(ALLTRIM(m.moDuletype))='FN-74'
+                     = seNd_scp('RECALL_S1')
+                ENDIF
+                m.meMstatus = '1'
+           CASE m.chOice=2
+                = seNd_scp('RECALL_C2')
+                IF UPPER(ALLTRIM(m.moDuletype))='FN-74'
+                     = seNd_scp('RECALL_S2')
+                ENDIF
+                m.meMstatus = '2'
+           CASE m.chOice=3
+                = seNd_scp('RECALL_C3')
+                IF UPPER(ALLTRIM(m.moDuletype))='FN-74'
+                     = seNd_scp('RECALL_S3')
+                ENDIF
+                m.meMstatus = '3'
+      ENDCASE
+ ENDIF
+ SHOW GETS
+ RETURN
+*
+PROCEDURE frOntmove
+ PARAMETER chOice
+ DO CASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-74'
+           DO CASE
+                CASE m.chOice=1
+                     = seNdscp('61','c8',2,'85220000000000')
+                CASE m.chOice=2
+                     = seNdscp('61','c8',2,'86220000000000')
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-145'
+           DO CASE
+                CASE m.chOice=1
+                     = seNdscp('61','c8',2,'85220000000000')
+                CASE m.chOice=2
+                     = seNdscp('61','c8',2,'86220000000000')
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-116'
+           DO CASE
+                CASE m.chOice=1
+                     = seNd_iso('59')
+                CASE m.chOice=2
+                     = seNd_iso('57')
+           ENDCASE
+ ENDCASE
+ RETURN
+*
+PROCEDURE reClmove
+ PARAMETER chOice
+ DO CASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-74'
+           DO CASE
+                CASE m.chOice=1
+                     = seNdscp('61','c8',2,'89220000000000')
+                CASE m.chOice=2
+                     = seNdscp('61','c8',2,'8a220000000000')
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-145'
+           DO CASE
+                CASE m.chOice=1
+                     = seNdscp('61','c8',2,'89220000000000')
+                CASE m.chOice=2
+                     = seNdscp('61','c8',2,'8a220000000000')
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-116'
+           DO CASE
+                CASE m.chOice=1
+                     = seNd_iso('69')
+                CASE m.chOice=2
+                     = seNd_iso('68')
+           ENDCASE
+ ENDCASE
+ RETURN
+*
+PROCEDURE baCkmove
+ PARAMETER chOice
+ DO CASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-74'
+           DO CASE
+                CASE m.chOice=1
+                     = seNdscp('61','c8',2,'87220000000000')
+                CASE m.chOice=2
+                     = seNdscp('61','c8',2,'88220000000000')
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-145'
+           DO CASE
+                CASE m.chOice=1
+                     = seNdscp('61','c8',2,'87220000000000')
+                CASE m.chOice=2
+                     = seNdscp('61','c8',2,'88220000000000')
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-116'
+           DO CASE
+                CASE m.chOice=1
+                     = seNd_iso('66')
+                CASE m.chOice=2
+                     = seNd_iso('64')
+           ENDCASE
+ ENDCASE
+ RETURN
+*
+PROCEDURE hoRizmove
+ PARAMETER chOice
+ DO CASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-74'
+           DO CASE
+                CASE m.chOice=1
+                     = seNdscp('61','c8',2,'81220000000000')
+                CASE m.chOice=2
+                     = seNdscp('61','c8',2,'82220000000000')
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-145'
+           DO CASE
+                CASE m.chOice=1
+                     = seNdscp('61','c8',2,'81220000000000')
+                CASE m.chOice=2
+                     = seNdscp('61','c8',2,'82220000000000')
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-116'
+           DO CASE
+                CASE m.chOice=1
+                     = seNd_iso('55')
+                CASE m.chOice=2
+                     = seNd_iso('67')
+           ENDCASE
+ ENDCASE
+ RETURN
+*
+PROCEDURE baCkheat
+ PARAMETER chOice
+ DO CASE
+      CASE m.chOice=1
+           WAIT WINDOW NOWAIT 'Seatback Heat ON'
+           = seNd_scp('RELAY09ON')
+      CASE m.chOice=2
+           WAIT WINDOW NOWAIT 'Seatback Heat OFF'
+           = seNd_scp('RELAY09OFF')
+ ENDCASE
+ RETURN
+*
+PROCEDURE cuShheat
+ PARAMETER chOice
+ DO CASE
+      CASE m.chOice=1
+           WAIT WINDOW NOWAIT 'Cushion Heat ON'
+           = seNd_scp('RELAY10ON')
+      CASE m.chOice=2
+           WAIT WINDOW NOWAIT 'Cushion Heat OFF'
+           = seNd_scp('RELAY10OFF')
+ ENDCASE
+ RETURN
+*
+FUNCTION auTocheck
+ PRIVATE stArttime, stOptime, l
+ IF m.viEwit
+      ACTIVATE WINDOW viEwwin
+      CLEAR
+ ENDIF
+ m.stArttime = SECONDS()
+ m.peNding = .T.
+ m.baIlout = .F.
+ m.reSult = .T.
+ m.l = 0
+ SELECT erRorlist
+ ZAP
+ FOR m.l = 1 TO 20
+      reSp_lvl[ m.l, 1] = .T.
+      reSp_lvl[ m.l, 2] = ''
+ ENDFOR
+ IF poWerup()
+      IF teSt_lvl(1)
+           IF geTversion()
+                reSp_lvl[ 1, 1] = .T.
+                IF teSt_lvl(12)
+                     IF m.viEwit
+                          ACTIVATE WINDOW viEwwin
+                          ? 'Testing Driver Seat Occupied...'
+                     ENDIF
+                     reSp_lvl[ 12, 1] = teStoccup()
+                ELSE
+                     reSp_lvl[ 12, 1] = .T.
+                ENDIF
+                IF (teSt_lvl(2) .OR. teSt_lvl(3) .OR. teSt_lvl(4) .OR.  ;
+                   teSt_lvl(5) .OR. teSt_lvl(8) .OR. teSt_lvl(9)) .AND.   ;
+                   .NOT. m.baIlout
+                     DO CASE
+                          CASE UPPER(ALLTRIM(m.moDuletype))='FN-116'  ;
+                               .AND. m.cfGdvrside=1
+                               = moVetime(1,2)
+                               WAIT WINDOW NOWAIT  ;
+                                    'Setting up for recline test...'
+                               = moVetime(6,2)
+                               DO fn116_st
+                          CASE UPPER(ALLTRIM(m.moDuletype))='FN-74' .AND.  ;
+                               m.cfGdvrside=1
+                               WAIT WINDOW NOWAIT  ;
+                                    'Setting up for recline test...'
+                               = moVetime(6,2)
+                               DO fn74_st
+                          CASE UPPER(ALLTRIM(m.moDuletype))='FN-145'  ;
+                               .AND. m.cfGdvrside=1
+                               WAIT WINDOW NOWAIT  ;
+                                    'Setting up for recline test...'
+                               = moVetime(6,2)
+                               DO fn145_st
+                          CASE UPPER(ALLTRIM(m.moDuletype))='NONE' .AND.  ;
+                               m.cfGdvrside=2
+                               WAIT WINDOW NOWAIT  ;
+                                    'Setting up for recline test...'
+                               = moVetime(6,2)
+                               DO noNe_st
+                          CASE UPPER(ALLTRIM(m.moDuletype))='NONE'
+                               DO noNe_st
+                          CASE UPPER(ALLTRIM(m.moDuletype))='NONE2'
+                               DO noNe_st1
+                          CASE UPPER(ALLTRIM(m.moDuletype))='UN93NONE'
+                               DO noNe_st1
+                          CASE UPPER(ALLTRIM(m.moDuletype))='MUSTANG'
+                               DO muStang
+                          OTHERWISE
+                     ENDCASE
+                ENDIF
+                IF UPPER(ALLTRIM(m.moDuletype))<>'MUSTANG'
+                     IF  .NOT. m.baIlout
+                          IF teSt_lvl(11)
+                               IF m.viEwit
+                                    ACTIVATE WINDOW viEwwin
+                                    ? 'Testing Seat Belt Switch...'
+                               ENDIF
+                               reSp_lvl[ 11, 1] = teStbelt()
+                          ELSE
+                               reSp_lvl[ 11, 1] = .T.
+                          ENDIF
+                     ENDIF
+                ENDIF
+                IF  .NOT. m.baIlout
+                     IF teSt_lvl(19)
+                          IF m.viEwit
+                               ACTIVATE WINDOW viEwwin
+                               ? 'Testing UN93 Heat...'
+                          ENDIF
+                          reSp_lvl[ 19, 1] = un93testhe()
+                          reSp_lvl[ 7, 1] = reSp_lvl(19,1)
+                     ELSE
+                          reSp_lvl[ 19, 1] = .T.
+                          reSp_lvl[ 7, 1] = .T.
+                          IF teSt_lvl(7)
+                               IF m.viEwit
+                                    ACTIVATE WINDOW viEwwin
+                                    ? 'Testing Heat...'
+                               ENDIF
+                               IF teSt_lvl(18)
+                                    reSp_lvl[ 7, 1] = teStheat()
+                               ELSE
+                                    IF heAtdetect()
+                                         = adD_err('0705')
+                                         reSp_lvl[ 7, 1] = .F.
+                                         reSp_lvl[ 18, 1] = .F.
+                                    ELSE
+                                         reSp_lvl[ 7, 1] = .T.
+                                         reSp_lvl[ 18, 1] = .T.
+                                    ENDIF
+                               ENDIF
+                          ELSE
+                               reSp_lvl[ 7, 1] = .T.
+                          ENDIF
+                     ENDIF
+                ENDIF
+                IF  .NOT. m.baIlout
+                     IF m.moDuletype='NONE' .OR. m.moDuletype='NONE2'
+                          IF teSt_lvl(5)
+                               IF m.viEwit
+                                    ACTIVATE WINDOW viEwwin
+                                    ? 'Testing Recline...'
+                               ENDIF
+                               reSp_lvl[ 5, 1] = teStreclin()
+                          ELSE
+                               reSp_lvl[ 5, 1] = .T.
+                          ENDIF
+                     ENDIF
+                ENDIF
+                IF  .NOT. m.baIlout
+                     IF teSt_lvl(14)
+                          IF m.viEwit
+                               ACTIVATE WINDOW viEwwin
+                               ? 'Testing Recline Switch...'
+                          ENDIF
+                          IF  .NOT. teStreclsw()
+                               reSp_lvl[ 14, 1] = .F.
+                          ENDIF
+                     ENDIF
+                ENDIF
+                IF  .NOT. m.baIlout
+                     IF teSt_lvl(6) .AND. (UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'MUSTANG')
+                          IF m.viEwit
+                               ACTIVATE WINDOW viEwwin
+                               ? 'Testing Lumbar...'
+                          ENDIF
+                          reSp_lvl[ 6, 1] = teStlumbar()
+                     ELSE
+                          reSp_lvl[ 6, 1] = .T.
+                     ENDIF
+                ENDIF
+                IF  .NOT. m.baIlout
+                     IF teSt_lvl(20)
+                          IF m.viEwit
+                               ACTIVATE WINDOW viEwwin
+                               ? 'Testing Lumbar...'
+                          ENDIF
+                          reSp_lvl[ 20, 1] = teStschukr()
+                     ELSE
+                          reSp_lvl[ 20, 1] = .T.
+                     ENDIF
+                ENDIF
+                IF  .NOT. m.baIlout
+                     IF teSt_lvl(10)
+                          IF m.viEwit
+                               ACTIVATE WINDOW viEwwin
+                               ? 'Testing Rate of Travel...'
+                          ENDIF
+                          reSp_lvl[ 10, 1] = teStroft()
+                     ELSE
+                          reSp_lvl[ 10, 1] = .T.
+                     ENDIF
+                ENDIF
+                IF  .NOT. m.baIlout
+                     IF teSt_lvl(13)
+                          IF m.viEwit
+                               ACTIVATE WINDOW viEwwin
+                               ? 'Testing Phone...'
+                          ENDIF
+                          reSp_lvl[ 13, 1] = teStphone()
+                     ELSE
+                          reSp_lvl[ 13, 1] = .T.
+                     ENDIF
+                ENDIF
+                IF  .NOT. m.baIlout
+                     IF teSt_lvl(17)
+                          IF m.viEwit
+                               ACTIVATE WINDOW viEwwin
+                               ? 'Testing Power Point...'
+                          ENDIF
+                          reSp_lvl[ 17, 1] = teStpowerp()
+                     ELSE
+                          reSp_lvl[ 17, 1] = .T.
+                     ENDIF
+                ENDIF
+           ELSE
+                WAIT WINDOW NOWAIT 'Version Failure !'
+                FOR m.l = 1 TO 20
+                     reSp_lvl[ m.l, 1] = .F.
+                     reSp_lvl[ m.l, 2] = ''
+                ENDFOR
+                = adD_err('0101')
+           ENDIF
+      ELSE
+           IF teSt_lvl(12)
+                IF m.viEwit
+                     ACTIVATE WINDOW viEwwin
+                     ? 'Testing Driver Seat Occupied...'
+                ENDIF
+                reSp_lvl[ 12, 1] = teStoccup()
+           ELSE
+                reSp_lvl[ 12, 1] = .T.
+           ENDIF
+           IF teSt_lvl(2) .OR. teSt_lvl(3) .OR. teSt_lvl(4) .OR.  ;
+              teSt_lvl(5) .OR. teSt_lvl(8) .OR. teSt_lvl(9) .AND.  .NOT.  ;
+              m.baIlout
+                DO CASE
+                     CASE UPPER(ALLTRIM(m.moDuletype))='FN-116' .AND.  ;
+                          m.cfGdvrside=1
+                          = moVetime(1,1)
+                          DO fn116_st
+                     CASE UPPER(ALLTRIM(m.moDuletype))='FN-74' .AND.  ;
+                          m.cfGdvrside=1
+                          DO fn74_st
+                     CASE UPPER(ALLTRIM(m.moDuletype))='FN-145' .AND.  ;
+                          m.cfGdvrside=1
+                          DO fn145_st
+                     CASE UPPER(ALLTRIM(m.moDuletype))='NONE'
+                          DO noNe_st
+                     CASE UPPER(ALLTRIM(m.moDuletype))='NONE2'
+                          DO noNe_st1
+                     OTHERWISE
+                ENDCASE
+           ENDIF
+           IF  .NOT. m.baIlout
+                IF teSt_lvl(7)
+                     IF m.viEwit
+                          ACTIVATE WINDOW viEwwin
+                          ? 'Testing Heat...'
+                     ENDIF
+                     IF teSt_lvl(18)
+                          reSp_lvl[ 7, 1] = teStheat()
+                     ELSE
+                          IF heAtdetect()
+                               = adD_err('0705')
+                               reSp_lvl[ 7, 1] = .F.
+                               reSp_lvl[ 18, 1] = .F.
+                          ELSE
+                               reSp_lvl[ 7, 1] = .T.
+                               reSp_lvl[ 18, 1] = .T.
+                          ENDIF
+                     ENDIF
+                ELSE
+                     reSp_lvl[ 7, 1] = .T.
+                     reSp_lvl[ 18, 1] = .T.
+                ENDIF
+           ENDIF
+           IF  .NOT. m.baIlout
+                IF m.moDuletype='NONE' .OR. m.moDuletype='NONE2'
+                     IF teSt_lvl(5)
+                          IF m.viEwit
+                               ACTIVATE WINDOW viEwwin
+                               ? 'Testing Recline...'
+                          ENDIF
+                          reSp_lvl[ 5, 1] = teStreclin()
+                     ELSE
+                          reSp_lvl[ 5, 1] = .T.
+                     ENDIF
+                ENDIF
+           ENDIF
+           IF  .NOT. m.baIlout
+                IF teSt_lvl(14)
+                     IF m.viEwit
+                          ACTIVATE WINDOW viEwwin
+                          ? 'Testing Recline Switch...'
+                     ENDIF
+                     IF  .NOT. teStreclsw()
+                          reSp_lvl[ 14, 1] = .F.
+                     ENDIF
+                ENDIF
+           ENDIF
+           IF UPPER(ALLTRIM(m.moDuletype))<>'MUSTANG'
+                IF  .NOT. m.baIlout
+                     IF teSt_lvl(6)
+                          IF m.viEwit
+                               ACTIVATE WINDOW viEwwin
+                               ? 'Testing Lumbar...'
+                          ENDIF
+                          reSp_lvl[ 6, 1] = teStlumbar()
+                     ENDIF
+                ENDIF
+           ENDIF
+           IF  .NOT. m.baIlout
+                IF teSt_lvl(20)
+                     IF m.viEwit
+                          ACTIVATE WINDOW viEwwin
+                          ? 'Testing Lumbar...'
+                     ENDIF
+                     reSp_lvl[ 20, 1] = teStschukr()
+                ELSE
+                     reSp_lvl[ 20, 1] = .T.
+                ENDIF
+           ENDIF
+           IF  .NOT. m.baIlout
+                IF teSt_lvl(10)
+                     IF m.viEwit
+                          ACTIVATE WINDOW viEwwin
+                          ? 'Testing Rate of Travel...'
+                     ENDIF
+                     reSp_lvl[ 10, 1] = teStroft()
+                ENDIF
+           ENDIF
+           IF  .NOT. m.baIlout
+                IF teSt_lvl(11)
+                     IF m.viEwit
+                          ACTIVATE WINDOW viEwwin
+                          ? 'Testing Seat Belt Switch...'
+                     ENDIF
+                     reSp_lvl[ 11, 1] = teStbelt()
+                ENDIF
+           ENDIF
+           IF  .NOT. m.baIlout
+                IF teSt_lvl(13)
+                     IF m.viEwit
+                          ACTIVATE WINDOW viEwwin
+                          ? 'Testing Phone...'
+                     ENDIF
+                     reSp_lvl[ 13, 1] = teStphone()
+                ELSE
+                     reSp_lvl[ 13, 1] = .T.
+                ENDIF
+           ENDIF
+           IF  .NOT. m.baIlout
+                IF teSt_lvl(17)
+                     IF m.viEwit
+                          ACTIVATE WINDOW viEwwin
+                          ? 'Testing Power Point...'
+                     ENDIF
+                     reSp_lvl[ 17, 1] = teStpowerp()
+                ELSE
+                     reSp_lvl[ 17, 1] = .T.
+                ENDIF
+           ENDIF
+      ENDIF
+ ELSE
+      WAIT WINDOW NOWAIT 'Power-Up Failure !'
+      FOR m.l = 1 TO 20
+           reSp_lvl[ m.l, 1] = .F.
+           reSp_lvl[ m.l, 2] = ''
+      ENDFOR
+ ENDIF
+ m.stOptime = SECONDS()
+ IF m.stOptime>=m.stArttime
+      m.teSt_time = stOptime-m.stArttime
+ ELSE
+      m.teSt_time = 86400-stArttime+m.stOptime
+ ENDIF
+ m.peNding = .F.
+ SHOW GETS
+ m.peNding = .T.
+ RETURN .T.
+*
+FUNCTION geTversion
+ PRIVATE veR_result, meSstime
+ m.veR_result = .T.
+ m.meSstime = 0.05
+ m.svErsion = 0
+ m.smOnth = 0
+ m.sdAy = 0
+ m.syEar = 0
+ m.hvErsion = 0
+ m.hmOnth = 0
+ m.hdAy = 0
+ m.hyEar = 0
+ WAIT WINDOW NOWAIT 'Requesting Software Version...'
+ DO CASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-116'
+           = seNd_iso('PID11')
+           IF geTisoresp(coM1)
+                m.svErsion = swBitand(rxMessage(14),240)/16
+                m.smOnth = swBitand(rxMessage(14),15)
+                m.sdAy = rxMessage(15)
+                m.syEar = rxMessage(16)
+           ELSE
+                WAIT WINDOW NOWAIT 'No Response !'
+                = adD_err('0009')
+                m.veR_result = .F.
+           ENDIF
+           IF m.svErsion<>m.s_Version
+                WAIT WINDOW NOWAIT 'Invalid Version !'
+                m.veR_result = .F.
+           ENDIF
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-74' .OR.  ;
+           UPPER(ALLTRIM(m.moDuletype))='FN-145'
+           IF seNd_scp('PID06')
+                IF geTscp()=0
+                     m.svErsion = swBitand(m.r_Byte4,240)/16
+                     m.smOnth = swBitand(m.r_Byte4,15)
+                     m.sdAy = m.r_Byte5
+                     m.syEar = m.r_Byte6
+                ELSE
+                     WAIT WINDOW NOWAIT 'No Response !'
+                     m.veR_result = .F.
+                     = adD_err('0008')
+                ENDIF
+                IF m.svErsion<>m.s_Version
+                     WAIT WINDOW NOWAIT 'Invalid Version !'
+                     m.veR_result = .F.
+                ENDIF
+           ELSE
+                m.veR_result = .F.
+                = adD_err('0008')
+           ENDIF
+      CASE UPPER(ALLTRIM(m.moDuletype))='EN-114'
+           = seNd_iso('PID11')
+           IF geTisoresp(coM1)
+                m.svErsion = swBitand(rxMessage(14),240)/16
+                m.smOnth = swBitand(rxMessage(14),15)
+                m.sdAy = rxMessage(15)
+                m.syEar = rxMessage(16)
+           ELSE
+                WAIT WINDOW NOWAIT 'No Response !'
+                = adD_err('0009')
+                m.veR_result = .F.
+           ENDIF
+           IF m.svErsion<>m.s_Version
+                WAIT WINDOW NOWAIT 'Invalid Version !'
+                m.veR_result = .F.
+           ENDIF
+      OTHERWISE
+           m.veR_result = .T.
+ ENDCASE
+ SHOW GETS
+ WAIT WINDOW TIMEOUT m.meSstime 'Requesting Hardware Version...'
+ DO CASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-116'
+           = seNd_iso('PID12')
+           IF geTisoresp(coM1)
+                m.hvErsion = swBitand(rxMessage(14),240)/16
+                m.hmOnth = swBitand(rxMessage(14),15)
+                m.hdAy = rxMessage(15)
+                m.hyEar = rxMessage(16)
+           ELSE
+                WAIT WINDOW NOWAIT 'No Response !'
+                = adD_err('0009')
+                m.veR_result = .F.
+           ENDIF
+           IF m.hvErsion<>m.h_Version
+                WAIT WINDOW NOWAIT 'Invalid Version !'
+                m.veR_result = .F.
+           ENDIF
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-74' .OR.  ;
+           UPPER(ALLTRIM(m.moDuletype))='FN-145'
+           m.hvErsion = 0
+           m.hmOnth = 0
+           m.hdAy = 0
+           m.hyEar = 0
+      CASE UPPER(ALLTRIM(m.moDuletype))='EN-114'
+           = seNd_iso('PID12')
+           IF geTisoresp(coM1)
+                m.hvErsion = swBitand(rxMessage(14),240)/16
+                m.hmOnth = swBitand(rxMessage(14),15)
+                m.hdAy = rxMessage(15)
+                m.hyEar = rxMessage(16)
+           ELSE
+                WAIT WINDOW NOWAIT 'No Response !'
+                = adD_err('0009')
+                m.veR_result = .F.
+           ENDIF
+           IF m.hvErsion<>m.h_Version
+                WAIT WINDOW NOWAIT 'Invalid Version !'
+                m.veR_result = .F.
+           ENDIF
+      OTHERWISE
+           m.veR_result = .T.
+ ENDCASE
+ SHOW GETS
+ RETURN m.veR_result
+*
+PROCEDURE fn116_st
+ PRIVATE l, j, nuMofdtcs
+ DIMENSION miRrors[ 4]
+ m.l = 0
+ m.j = 0
+ m.nuMofdtcs = 0
+ STORE .F. TO miRrors
+ WAIT WINDOW NOWAIT 'Entering Diag state...'
+ = seNd_iso('D0')
+ IF geTisoresp(coM1)
+      WAIT WINDOW NOWAIT 'Entering Self Test...'
+      = seNd_iso('D2')
+      = geTisoresp(coM1)
+      = swWait(18)
+      FOR m.l = 1 TO 35
+           WAIT WINDOW NOWAIT 'Testing...'
+           IF baIlout()
+                = seNd_iso('D4')
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           = seNd_iso('D3')
+           = geTisoresp(coM1)
+           = seNd_iso('PID09')
+           = geTisoresp(coM1)
+           IF rxMessage(14)<3
+                EXIT
+           ENDIF
+           = swWait(18)
+           WAIT CLEAR
+           = seNd_iso('B0')
+           = geTisoresp(coM1)
+      ENDFOR
+      IF  .NOT. m.baIlout
+           WAIT WINDOW NOWAIT 'Request Number of DTCs from test...'
+           = seNd_iso('PID03')
+           = geTisoresp(coM1)
+           m.nuMofdtcs = rxMessage(14)
+           WAIT WINDOW NOWAIT 'Requesting Results...'
+           = seNd_iso('D5')
+           = geTisoresp(coM1)
+           IF m.nuMofdtcs>0
+                FOR m.l = 1 TO INT(m.nuMofdtcs/3)+1
+                     FOR m.j = 1 TO 3
+                          IF (m.j+(m.l-1)*3)>m.nuMofdtcs
+                               EXIT
+                          ELSE
+                               DO CASE
+                                    CASE UPPER(maKe_dtc(rxMessage(9+(m.l- ;
+                                     1)*11+m.j*2),rxMessage(10+(m.l-1)*11+ ;
+                                     m.j*2)))='9667'
+                                         miRrors[ 1] = .T.
+                                    CASE UPPER(maKe_dtc(rxMessage(9+(m.l- ;
+                                     1)*11+m.j*2),rxMessage(10+(m.l-1)*11+ ;
+                                     m.j*2)))='9668'
+                                         miRrors[ 2] = .T.
+                                    CASE UPPER(maKe_dtc(rxMessage(9+(m.l- ;
+                                     1)*11+m.j*2),rxMessage(10+(m.l-1)*11+ ;
+                                     m.j*2)))='9669'
+                                         miRrors[ 3] = .T.
+                                    CASE UPPER(maKe_dtc(rxMessage(9+(m.l- ;
+                                     1)*11+m.j*2),rxMessage(10+(m.l-1)*11+ ;
+                                     m.j*2)))='9670'
+                                         miRrors[ 4] = .T.
+                                    OTHERWISE
+                                         = adD_err(UPPER(maKe_dtc(rxMessage(9+ ;
+                                          (m.l-1)*11+m.j*2),rxMessage(10+ ;
+                                          (m.l-1)*11+m.j*2))))
+                               ENDCASE
+                          ENDIF
+                     ENDFOR
+                ENDFOR
+           ELSE
+                = adD_err('0005')
+                reSp_lvl[ 8, 1] = .F.
+           ENDIF
+           IF  .NOT. miRrors(1)
+                = adD_err('0901')
+           ENDIF
+           IF  .NOT. miRrors(2)
+                = adD_err('0902')
+           ENDIF
+           IF  .NOT. miRrors(3)
+                = adD_err('0903')
+           ENDIF
+           IF  .NOT. miRrors(4)
+                = adD_err('0904')
+           ENDIF
+      ELSE
+           = adD_err('0009')
+      ENDIF
+ ENDIF
+ SHOW GETS
+ RETURN
+*
+PROCEDURE fn74_st
+ PRIVATE l, j, nuMofdtcs, meSs
+ DIMENSION miRrors[ 8]
+ m.l = 0
+ m.j = 0
+ m.nuMofdtcs = 0
+ m.meSs = ''
+ STORE .F. TO miRrors
+ DO WHILE (geTscp()=-129)
+ ENDDO
+ WAIT WINDOW NOWAIT 'Sending Ignition off Message...'
+ = swWait(1)
+ = seNd_scp('88')
+ WAIT WINDOW NOWAIT 'Sending PRNDL Park Message...'
+ = swWait(1)
+ = seNd_scp('94')
+ WAIT WINDOW NOWAIT 'Entering Diag state...'
+ = swWait(1)
+ = seNd_scp('10')
+ IF geT_scp(6,127,16,0,0,0,0)
+      WAIT WINDOW NOWAIT 'Entering Self Test...'
+      = swWait(1)
+      = seNd_scp('31')
+      IF geT_scp(6,127,49,2,0,0,0)
+           = swWait(0036)
+           FOR m.l = 1 TO 75
+                WAIT WINDOW NOWAIT 'Testing...'
+                IF baIlout()
+                     = seNd_scp('EXIT_TEST')
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                = seNd_scp('32')
+                IF geT_scp(3,127,50,2)
+                     = seNd_scp('PID04')
+                     IF geT_scp(3,98,209,0)
+                          IF m.r_Byte4<3
+                               EXIT
+                          ENDIF
+                     ELSE
+                          = adD_err('006A')
+                     ENDIF
+                ELSE
+                     = adD_err('006B')
+                ENDIF
+                = swWait(18)
+                WAIT CLEAR
+                = seNd_scp('TESTER_PR')
+                IF  .NOT. geT_scp(0)
+                     = adD_err('006C')
+                ENDIF
+           ENDFOR
+      ELSE
+           = adD_err('006D')
+      ENDIF
+      IF m.r_Byte4=2 .AND.  .NOT. m.baIlout
+           = seNd_scp('PID02')
+           IF geTscp()<>-1
+                m.nuMofdtcs = m.r_Byte4
+                IF m.nuMofdtcs>0
+                     WAIT WINDOW NOWAIT 'Requesting Results...'
+                     = seNd_scp('33')
+                     FOR m.l = 1 TO INT(m.nuMofdtcs/3)+1
+                          IF geTscp()<>-1
+                               FOR m.j = 1 TO 3
+                                    IF (m.j+(m.l-1)*3)>m.nuMofdtcs
+                                         EXIT
+                                    ELSE
+                                         DO CASE
+                                              CASE m.j=1
+                                                   m.meSs =  ;
+                                                    UPPER(maKe_dtc(m.r_Byte2, ;
+                                                    m.r_Byte3))
+                                              CASE m.j=2
+                                                   m.meSs =  ;
+                                                    UPPER(maKe_dtc(m.r_Byte4, ;
+                                                    m.r_Byte5))
+                                              CASE m.j=3
+                                                   m.meSs =  ;
+                                                    UPPER(maKe_dtc(m.r_Byte6, ;
+                                                    m.r_Byte7))
+                                         ENDCASE
+                                         DO CASE
+                                              CASE m.meSs='9667'
+                                                   miRrors[ 1] = .T.
+                                              CASE m.meSs='9668'
+                                                   miRrors[ 2] = .T.
+                                              CASE m.meSs='9669'
+                                                   miRrors[ 3] = .T.
+                                              CASE m.meSs='9670'
+                                                   miRrors[ 4] = .T.
+                                              CASE m.meSs='A312'
+                                                   miRrors[ 5] = .T.
+                                              CASE m.meSs='A316'
+                                                   miRrors[ 6] = .T.
+                                              CASE m.meSs='A320'
+                                                   miRrors[ 7] = .T.
+                                              CASE m.meSs='A324'
+                                                   miRrors[ 8] = .T.
+                                              OTHERWISE
+                                                   = adD_err(m.meSs)
+                                         ENDCASE
+                                    ENDIF
+                               ENDFOR
+                          ELSE
+                               WAIT WINDOW TIMEOUT 3  ;
+                                    'SCP Read error reporting DTCs !'
+                          ENDIF
+                     ENDFOR
+                ENDIF
+           ELSE
+                WAIT WINDOW TIMEOUT 3 'SCP Read error requesting # of DTCs !'
+           ENDIF
+           WAIT WINDOW NOWAIT 'Returning to operating state...'
+           = seNd_scp('20')
+           = geTscp()
+           IF  .NOT. miRrors(1)
+                = adD_err('0901')
+           ENDIF
+           IF  .NOT. miRrors(2)
+                = adD_err('0902')
+           ENDIF
+           IF  .NOT. miRrors(3)
+                = adD_err('0903')
+           ENDIF
+           IF  .NOT. miRrors(4)
+                = adD_err('0904')
+           ENDIF
+           IF  .NOT. miRrors(5)
+                = adD_err('0905')
+           ENDIF
+           IF  .NOT. miRrors(6)
+                = adD_err('0906')
+           ENDIF
+           IF  .NOT. miRrors(7)
+                = adD_err('0907')
+           ENDIF
+           IF  .NOT. miRrors(8)
+                = adD_err('0908')
+           ENDIF
+           SHOW GETS
+           = swWait(18)
+      ELSE
+           IF  .NOT. m.baIlout
+                = adD_err('0005')
+                reSp_lvl[ 8, 1] = .F.
+           ENDIF
+           SHOW GETS
+      ENDIF
+ ELSE
+      = adD_err('0008')
+ ENDIF
+ RETURN
+*
+PROCEDURE fn145_st
+ PRIVATE l, j, nuMofdtcs, meSs
+ DIMENSION miRrors[ 8]
+ m.l = 0
+ m.j = 0
+ m.nuMofdtcs = 0
+ m.meSs = ''
+ STORE .F. TO miRrors
+ DO WHILE (geTscp()=-129)
+ ENDDO
+ WAIT WINDOW NOWAIT 'Sending Ignition off Message...'
+ = swWait(1)
+ = seNd_scp('88')
+ WAIT WINDOW NOWAIT 'Sending PRNDL Park Message...'
+ = swWait(1)
+ = seNd_scp('94')
+ WAIT WINDOW NOWAIT 'Entering Diag state...'
+ = swWait(1)
+ = seNd_scp('10')
+ IF geT_scp(6,127,16,0,0,0,0)
+      WAIT WINDOW NOWAIT 'Entering Self Test...'
+      = swWait(1)
+      = seNd_scp('31')
+      IF geT_scp(6,127,49,2,0,0,0)
+           = swWait(0036)
+           FOR m.l = 1 TO 75
+                WAIT WINDOW NOWAIT 'Testing...'
+                IF baIlout()
+                     = seNd_scp('EXIT_TEST')
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                = seNd_scp('32')
+                IF geT_scp(3,127,50,2)
+                     = seNd_scp('PID04')
+                     IF geT_scp(3,98,209,0)
+                          IF m.r_Byte4<3
+                               EXIT
+                          ENDIF
+                     ELSE
+                          = adD_err('006A')
+                     ENDIF
+                ELSE
+                     = adD_err('006B')
+                ENDIF
+                = swWait(18)
+                WAIT CLEAR
+                = seNd_scp('TESTER_PR')
+                IF  .NOT. geT_scp(0)
+                     = adD_err('006C')
+                ENDIF
+           ENDFOR
+      ELSE
+           = adD_err('006D')
+      ENDIF
+      IF m.r_Byte4=2 .AND.  .NOT. m.baIlout
+           = seNd_scp('PID02')
+           IF geTscp()<>-1
+                m.nuMofdtcs = m.r_Byte4
+                IF m.nuMofdtcs>0
+                     WAIT WINDOW NOWAIT 'Requesting Results...'
+                     = seNd_scp('33')
+                     FOR m.l = 1 TO INT(m.nuMofdtcs/3)+1
+                          IF geTscp()<>-1
+                               FOR m.j = 1 TO 3
+                                    IF (m.j+(m.l-1)*3)>m.nuMofdtcs
+                                         EXIT
+                                    ELSE
+                                         DO CASE
+                                              CASE m.j=1
+                                                   m.meSs =  ;
+                                                    UPPER(maKe_dtc(m.r_Byte2, ;
+                                                    m.r_Byte3))
+                                              CASE m.j=2
+                                                   m.meSs =  ;
+                                                    UPPER(maKe_dtc(m.r_Byte4, ;
+                                                    m.r_Byte5))
+                                              CASE m.j=3
+                                                   m.meSs =  ;
+                                                    UPPER(maKe_dtc(m.r_Byte6, ;
+                                                    m.r_Byte7))
+                                         ENDCASE
+                                         DO CASE
+                                              CASE m.meSs='9667'
+                                                   miRrors[ 1] = .T.
+                                              CASE m.meSs='9668'
+                                                   miRrors[ 2] = .T.
+                                              CASE m.meSs='9669'
+                                                   miRrors[ 3] = .T.
+                                              CASE m.meSs='9670'
+                                                   miRrors[ 4] = .T.
+                                              CASE m.meSs='A312'
+                                                   miRrors[ 5] = .T.
+                                              CASE m.meSs='A316'
+                                                   miRrors[ 6] = .T.
+                                              CASE m.meSs='A320'
+                                                   miRrors[ 7] = .T.
+                                              CASE m.meSs='A324'
+                                                   miRrors[ 8] = .T.
+                                              OTHERWISE
+                                                   = adD_err(m.meSs)
+                                         ENDCASE
+                                    ENDIF
+                               ENDFOR
+                          ELSE
+                               WAIT WINDOW TIMEOUT 3  ;
+                                    'SCP Read error reporting DTCs !'
+                          ENDIF
+                     ENDFOR
+                ENDIF
+           ELSE
+                WAIT WINDOW TIMEOUT 3 'SCP Read error requesting # of DTCs !'
+           ENDIF
+           WAIT WINDOW NOWAIT 'Returning to operating state...'
+           = seNd_scp('20')
+           = geTscp()
+           IF  .NOT. miRrors(1)
+                = adD_err('0901')
+           ENDIF
+           IF  .NOT. miRrors(2)
+                = adD_err('0902')
+           ENDIF
+           IF  .NOT. miRrors(3)
+                = adD_err('0903')
+           ENDIF
+           IF  .NOT. miRrors(4)
+                = adD_err('0904')
+           ENDIF
+           IF  .NOT. miRrors(5)
+                = adD_err('0905')
+           ENDIF
+           IF  .NOT. miRrors(6)
+                = adD_err('0906')
+           ENDIF
+           IF  .NOT. miRrors(7)
+                = adD_err('0907')
+           ENDIF
+           IF  .NOT. miRrors(8)
+                = adD_err('0908')
+           ENDIF
+           SHOW GETS
+           = swWait(18)
+      ELSE
+           IF  .NOT. m.baIlout
+                = adD_err('0005')
+                reSp_lvl[ 8, 1] = .F.
+           ENDIF
+           SHOW GETS
+      ENDIF
+ ELSE
+      = adD_err('0008')
+ ENDIF
+ RETURN
+*
+PROCEDURE noNe_st
+ PRIVATE moTor11, moTor12, moTor21, moTor22, moTor31, moTor32, moTor41, moTor42
+ PRIVATE cuRrent
+ m.cuRrent = 0
+ m.moTor11 = .F.
+ m.moTor12 = .F.
+ m.moTor21 = .F.
+ m.moTor22 = .F.
+ m.moTor31 = .F.
+ m.moTor32 = .F.
+ IF teSt_lvl(2)
+      IF m.viEwit
+           ACTIVATE WINDOW viEwwin
+           ? 'Testing Front Motor...'
+      ENDIF
+      = seNd_scp('RELAY01OFF')
+      = seNd_scp('RELAY02ON')
+      = swWait(15)
+      = swCrttimer(1,18)
+      DO WHILE swGtimer(1)>0
+           IF baIlout()
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           m.cuRrent = reAd_atod1()
+           IF m.cuRrent>=0.3
+                m.moTor11 = .T.
+                EXIT
+           ENDIF
+      ENDDO
+      = swDsytimer(1)
+      = seNd_scp('RELAY02OFF')
+      IF  .NOT. m.baIlout
+           = seNd_scp('RELAY01ON')
+           = swWait(15)
+           = swCrttimer(1,18)
+           DO WHILE swGtimer(1)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                m.cuRrent = reAd_atod1()
+                IF m.cuRrent>=0.3
+                     m.moTor12 = .T.
+                     EXIT
+                ENDIF
+           ENDDO
+           = swDsytimer(1)
+           = seNd_scp('RELAY01OFF')
+           = seNd_scp('RELAY02OFF')
+      ENDIF
+ ENDIF
+ IF teSt_lvl(3) .AND.  .NOT. m.baIlout
+      IF m.viEwit
+           ACTIVATE WINDOW viEwwin
+           ? 'Testing Rear Motor...'
+      ENDIF
+      = seNd_scp('RELAY06OFF')
+      = seNd_scp('RELAY05ON')
+      = swWait(15)
+      = swCrttimer(1,18)
+      DO WHILE swGtimer(1)>0
+           IF baIlout()
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           m.cuRrent = reAd_atod1()
+           IF m.cuRrent>=0.3
+                m.moTor21 = .T.
+                EXIT
+           ENDIF
+      ENDDO
+      = swDsytimer(1)
+      = seNd_scp('RELAY05OFF')
+      IF  .NOT. m.baIlout
+           = seNd_scp('RELAY06ON')
+           = swWait(15)
+           = swCrttimer(1,18)
+           DO WHILE swGtimer(1)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                m.cuRrent = reAd_atod1()
+                IF m.cuRrent>=0.3
+                     m.moTor22 = .T.
+                     EXIT
+                ENDIF
+           ENDDO
+           = swDsytimer(1)
+           = seNd_scp('RELAY05OFF')
+           = seNd_scp('RELAY06OFF')
+      ENDIF
+ ENDIF
+ IF teSt_lvl(4) .AND.  .NOT. m.baIlout
+      IF m.viEwit
+           ACTIVATE WINDOW viEwwin
+           ? 'Testing Horizontal Motor...'
+      ENDIF
+      = seNd_scp('RELAY04OFF')
+      = seNd_scp('RELAY03ON')
+      = swWait(15)
+      = swCrttimer(1,18)
+      DO WHILE swGtimer(1)>0
+           IF baIlout()
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           m.cuRrent = reAd_atod1()
+           IF m.cuRrent>=0.3
+                m.moTor31 = .T.
+                EXIT
+           ENDIF
+      ENDDO
+      = swDsytimer(1)
+      = seNd_scp('RELAY03OFF')
+      IF  .NOT. m.baIlout
+           = seNd_scp('RELAY04ON')
+           = swWait(15)
+           = swCrttimer(1,18)
+           DO WHILE swGtimer(1)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                m.cuRrent = reAd_atod1()
+                IF m.cuRrent>=0.3
+                     m.moTor32 = .T.
+                     EXIT
+                ENDIF
+           ENDDO
+           = swDsytimer(1)
+           = seNd_scp('RELAY03OFF')
+           = seNd_scp('RELAY04OFF')
+      ENDIF
+ ENDIF
+ IF  .NOT. m.baIlout
+      IF  .NOT. m.moTor11 .AND. teSt_lvl(2)
+           = adD_err('0201')
+      ENDIF
+      IF  .NOT. m.moTor12 .AND. teSt_lvl(2)
+           = adD_err('0202')
+      ENDIF
+      IF  .NOT. m.moTor21 .AND. teSt_lvl(3)
+           = adD_err('0301')
+      ENDIF
+      IF  .NOT. m.moTor22 .AND. teSt_lvl(3)
+           = adD_err('0302')
+      ENDIF
+      IF  .NOT. m.moTor31 .AND. teSt_lvl(4)
+           = adD_err('0401')
+      ENDIF
+      IF  .NOT. m.moTor32 .AND. teSt_lvl(4)
+           = adD_err('0402')
+      ENDIF
+ ENDIF
+ RETURN
+*
+PROCEDURE noNe_st1
+ PRIVATE goTit, stArttime, stOptime
+ DIMENSION maN_motor[ 12]
+ PRIVATE op_fup, op_fdn, op_frel
+ m.op_fup = 30
+ m.op_fdn = 30
+ m.op_frel = 5
+ m.op_bup = 30
+ m.op_bdn = 30
+ m.op_brel = 5
+ m.op_hfwd = 30
+ m.op_hbk = 30
+ m.op_hrel = 5
+ = swDaltimer()
+ STORE .F. TO maN_motor
+ IF teSt_lvl(2) .AND.  .NOT. m.baIlout
+      IF m.cfGshort=.T.
+           SET PROCEDURE TO SHORTEST.PRG
+           m.goTit = shOrtfrt('DOWN',m.op_fdn,cfGshtime)
+           IF m.goTit=.F.
+                = adD_err('0202')
+                RETURN
+           ENDIF
+           m.goTit = shOrtfrt('UP',m.op_fdn,cfGshtime)
+           IF m.goTit=.F.
+                = adD_err('0201')
+                RETURN
+           ENDIF
+      ELSE
+           SET PROCEDURE TO LONGTEST.PRG
+           m.goTit = loNgfrt('DOWN',m.frDn_run,frDnstall,op_fdn,op_frel)
+           IF m.goTit=.F.
+                = adD_err('0202')
+                RETURN
+           ENDIF
+           m.goTit = loNgfrt('UP',m.frUp_run,frOnstall,op_fup,op_frel)
+           IF m.goTit=.F.
+                = adD_err('0201')
+                RETURN
+           ENDIF
+      ENDIF
+ ENDIF
+ IF teSt_lvl(3) .AND.  .NOT. m.baIlout
+      IF m.cfGshort=.T.
+           SET PROCEDURE TO SHORTEST.PRG
+           m.goTit = shOrtrr('DOWN',m.op_bdn,cfGshtime)
+           IF m.goTit=.F.
+                = adD_err('0202')
+                RETURN
+           ENDIF
+           m.goTit = shOrtrr('UP',m.op_bdn,cfGshtime)
+           IF m.goTit=.F.
+                = adD_err('0201')
+                RETURN
+           ENDIF
+      ELSE
+           SET PROCEDURE TO LONGTEST.PRG
+           m.goTit = loNgrr('DOWN',m.bkDn_run,bkDnstall,op_bdn,op_brel)
+           IF m.goTit=.F.
+                = adD_err('0202')
+                RETURN
+           ENDIF
+           m.goTit = loNgrr('UP',m.bkUp_run,bkUpstall,op_bup,op_brel)
+           IF m.goTit=.F.
+                = adD_err('0201')
+                RETURN
+           ENDIF
+      ENDIF
+ ENDIF
+ IF teSt_lvl(4) .AND.  .NOT. m.baIlout
+      IF m.cfGshort=.T.
+           SET PROCEDURE TO SHORTEST.PRG
+           IF m.moDuletype='UN93NONE'
+                m.goTit = shOrthoriz('BACKWARD',m.op_hbk,cfGshtime)
+                IF m.goTit=.F.
+                     = adD_err('0402')
+                     RETURN
+                ENDIF
+                m.goTit = shOrthoriz('FORWARD',m.op_hfwd,cfGshtime)
+                IF m.goTit=.F.
+                     = adD_err('0401')
+                     RETURN
+                ENDIF
+           ELSE
+                m.goTit = shOrthoriz('FORWARD',m.op_hfwd,cfGshtime)
+                IF m.goTit=.F.
+                     = adD_err('0401')
+                     RETURN
+                ENDIF
+                m.goTit = shOrthoriz('BACKWARD',m.op_hbk,cfGshtime)
+                IF m.goTit=.F.
+                     = adD_err('0402')
+                     RETURN
+                ENDIF
+           ENDIF
+      ELSE
+           SET PROCEDURE TO LONGTEST.PRG
+           m.goTit = loNghoriz('FORWARD',hoFw_run,hoFwstall,op_hfwd,op_hrel)
+           IF m.goTit=.F.
+                = adD_err('0401')
+                RETURN
+           ENDIF
+           m.goTit = loNghoriz('BACKWARD',hoBk_run,hoBkstall,op_hbk,op_hrel)
+           IF m.goTit=.F.
+                = adD_err('0402')
+                RETURN
+           ENDIF
+      ENDIF
+ ENDIF
+*
+PROCEDURE muStang
+ PRIVATE goTit, stArttime, stOptime
+ DIMENSION maN_motor[ 12]
+ PRIVATE op_fup, op_fdn, op_frel
+ m.op_fup = m.vfMaxtime
+ m.op_fdn = m.vfMaxtime
+ m.op_frel = m.vfMaxtime
+ m.op_bup = m.vrMaxtime
+ m.op_bdn = m.vrMaxtime
+ m.op_brel = m.vrMaxtime
+ m.op_hfwd = 30
+ m.op_hbk = 30
+ m.op_hrel = 5
+ = swDaltimer()
+ STORE .F. TO maN_motor
+ IF teSt_lvl(2) .AND.  .NOT. m.baIlout
+      IF m.cfGshort=.T.
+           SET PROCEDURE TO SHORTEST.PRG
+           m.goTit = shOrtfrt('UP',m.vfRuncur,cfGshtime)
+           IF m.goTit=.F.
+                = adD_err('0201')
+                RETURN
+           ENDIF
+           m.goTit = shOrtfrt('DOWN',m.vfRuncur,cfGshtime)
+           IF m.goTit=.F.
+                = adD_err('0202')
+                RETURN
+           ENDIF
+      ELSE
+           SET PROCEDURE TO LONGTEST.PRG
+           m.goTit = loNgfrt('UP',m.vfRuncur,vfStallcur,vfMaxtime,op_frel)
+           IF m.goTit=.F.
+                = adD_err('0201')
+                RETURN
+           ENDIF
+           m.goTit = loNgfrt('DOWN',m.vrRuncur,vrStallcur,vrMaxtime,vrMaxtime)
+           IF m.goTit=.F.
+                = adD_err('0202')
+                RETURN
+           ENDIF
+      ENDIF
+ ENDIF
+ IF teSt_lvl(3) .AND.  .NOT. m.baIlout
+      IF m.cfGshort=.T.
+           SET PROCEDURE TO SHORTEST.PRG
+           m.goTit = shOrtrr('UP',vrRuncur,cfGshtime)
+           IF m.goTit=.F.
+                = adD_err('0301')
+                RETURN
+           ENDIF
+           m.goTit = shOrtrr('DOWN',vrRuncur,cfGshtime)
+           IF m.goTit=.F.
+                = adD_err('0302')
+                RETURN
+           ENDIF
+      ELSE
+           SET PROCEDURE TO LONGTEST.PRG
+           m.goTit = loNgrr('UP',vrRuncur,vrStallcur,vfMaxtime,vfMaxtime)
+           IF m.goTit=.F.
+                = adD_err('0301')
+                RETURN
+           ENDIF
+           m.goTit = loNgrr('DOWN',vrRuncur,vrStallcur,vfMaxtime,vfMaxtime)
+           IF m.goTit=.F.
+                = adD_err('0302')
+                RETURN
+           ENDIF
+      ENDIF
+ ENDIF
+ IF teSt_lvl(4) .AND.  .NOT. m.baIlout
+      IF m.cfGshort=.T.
+           SET PROCEDURE TO SHORTEST.PRG
+           m.goTit = shOrthoriz('BACKWARD',hoBk_run,cfGshtime)
+           IF m.goTit=.F.
+                = adD_err('0402')
+                RETURN
+           ENDIF
+           m.goTit = shOrthoriz('FORWARD',hoFw_run,cfGshtime)
+           IF m.goTit=.F.
+                = adD_err('0401')
+                RETURN
+           ENDIF
+      ELSE
+           SET PROCEDURE TO LONGTEST.PRG
+           m.goTit = loNghoriz('BACKWARD',hoBk_run,hoBkstall,op_hbk,op_hrel)
+           IF m.goTit=.F.
+                = adD_err('0402')
+                RETURN
+           ENDIF
+           m.goTit = loNghoriz('FORWARD',hoFw_run,hoFwstall,op_hfwd,op_hrel)
+           IF m.goTit=.F.
+                = adD_err('0401')
+                RETURN
+           ENDIF
+      ENDIF
+ ENDIF
+ IF  .NOT. m.baIlout
+      IF teSt_lvl(11)
+           IF m.viEwit
+                = seNd_scp('RELAY12OFF')
+                = seNd_scp('RELAY14OFF')
+                ACTIVATE WINDOW viEwwin
+                ? 'Testing Seat Belt Switch...'
+           ENDIF
+           
+           ***** SEAT BELT TEST FOLLOWS:
+           *****
+           reSp_lvl[ 11, 1] = teStbelt()
+           *****
+           
+           
+           
+      ELSE
+           reSp_lvl[ 11, 1] = .T.
+      ENDIF
+      = seNd_scp('RELAY12ON')
+      = seNd_scp('RELAY14ON')
+ ENDIF
+ IF  .NOT. m.baIlout
+      IF teSt_lvl(6)
+           IF m.viEwit
+                ACTIVATE WINDOW viEwwin
+                ? 'Testing Lumbar...'
+           ENDIF
+           
+           
+           ***** RDR MUSTANG LUMBAR FOLLOWS:
+           *****
+           reSp_lvl[ 6, 1] = muStlumbar()
+           *****
+           
+           
+           
+      ELSE
+           reSp_lvl[ 6, 1] = .T.
+      ENDIF
+ ENDIF
+ = shIpmstng()
+ = swDaltimer()
+ RETURN
+*
+FUNCTION teStreclin
+ PRIVATE moTor1, moTor2, moTor3, moTor4, moTor5, cuRrent
+ m.r_Byte3 = 0
+ m.r_Byte4 = 0
+ m.moTor1 = .F.
+ m.moTor2 = .F.
+ m.moTor3 = .F.
+ m.moTor4 = .F.
+ m.moTor5 = .F.
+ m.cuRrent = 0
+ IF  .NOT. teSt_lvl(15)
+      WAIT WINDOW NOWAIT 'Testing recline on non-module seat...'
+      = seNd_scp('RELAY07OFF')
+      = seNd_scp('RELAY08ON')
+      = swWait(15)
+      = swCrttimer(1,18)
+      DO WHILE swGtimer(1)>0
+           IF baIlout()
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           m.cuRrent = reAd_atod1()
+           IF m.cuRrent>=m.reBk_run
+                m.moTor1 = .T.
+                EXIT
+           ENDIF
+      ENDDO
+      IF m.cuRrent>=m.reBk_run .AND. m.cuRrent<m.reFwstall
+           m.moTor2 = .T.
+      ENDIF
+      = swDsytimer(1)
+      = seNd_scp('RELAY08OFF')
+      IF  .NOT. m.baIlout
+           = seNd_scp('RELAY07ON')
+           = swWait(15)
+           = swCrttimer(1,swSecond*m.reClstall)
+           DO WHILE swGtimer(1)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                m.cuRrent = reAd_atod1()
+                IF m.cuRrent>=m.reFw_run
+                     m.moTor3 = .T.
+                     EXIT
+                ENDIF
+           ENDDO
+           IF m.cuRrent>=m.reFw_run .AND. m.cuRrent<m.reFwstall
+                m.moTor4 = .T.
+           ENDIF
+           = swDsytimer(1)
+           = seNd_scp('RELAY07OFF')
+           = seNd_scp('RELAY08OFF')
+      ENDIF
+      IF  .NOT. m.baIlout
+           = seNd_scp('RELAY07ON')
+           = swWait(15)
+           = swCrttimer(1,swSecond*m.reClstall)
+           DO WHILE swGtimer(1)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                m.cuRrent = reAd_atod1()
+                IF m.cuRrent>m.reFwstall
+                     m.moTor5 = .T.
+                     EXIT
+                ENDIF
+           ENDDO
+           = swDsytimer(1)
+           = seNd_scp('RELAY07OFF')
+           = seNd_scp('RELAY08OFF')
+      ENDIF
+      IF  .NOT. m.moTor1
+           = adD_err('0507')
+      ELSE
+           IF  .NOT. m.moTor2
+                = adD_err('0509')
+           ENDIF
+      ENDIF
+      IF  .NOT. m.moTor3
+           = adD_err('0506')
+      ELSE
+           IF  .NOT. m.moTor4
+                = adD_err('0508')
+           ENDIF
+      ENDIF
+      IF  .NOT. m.moTor5
+           = adD_err('0510')
+      ENDIF
+      IF m.moTor1 .AND. m.moTor2 .AND. m.moTor3 .AND. m.moTor4 .AND. m.moTor5
+           = clEarpromp()
+           RETURN .T.
+      ENDIF
+ ELSE
+      IF  .NOT. in_prompt('Does the Recliner Function Properly?')
+           = adD_err('0511')
+           = clEarpromp()
+           RETURN .F.
+      ELSE
+           = clEarpromp()
+           RETURN .T.
+      ENDIF
+ ENDIF
+ = clEarpromp()
+ RETURN .F.
+*
+FUNCTION teStreclsw
+ PRIVATE ro_result, rc_result, rs_result, inLoop, skIpcount
+ m.r_Byte3 = 0
+ m.r_Byte4 = 0
+ IF m.moDuletype='NONE' .OR. m.moDuletype='NONE2'
+      = laRge_prom('PRESS RECLINE SWITCH DOWN...',0)
+      m.ro_result = .F.
+      m.rc_result = .F.
+      = swCrttimer(1,(swSecond*m.op_recldn))
+      DO WHILE swGtimer(1)>0
+           IF baIlout()
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           m.cuRrent = reAd_atod1()
+           IF m.cuRrent>=m.reBk_run
+                IF m.cuRrent>=m.reBkstall
+                     = adD_err('0509')
+                     EXIT
+                ENDIF
+                m.rc_result = .T.
+                = laRge_prom('RELEASE RECLINE SWITCH...',1)
+                = swCrttimer(2,swSecond*m.op_reclrel)
+                DO WHILE swGtimer(2)>0
+                     m.cuRrent = reAd_atod1()
+                     IF m.cuRrent<m.reBk_run
+                          m.ro_result = .T.
+                          EXIT
+                     ENDIF
+                ENDDO
+                IF m.ro_result
+                     EXIT
+                ENDIF
+           ENDIF
+      ENDDO
+      = swDsytimer(1)
+      = swDsytimer(2)
+      = clEarpromp()
+      IF  .NOT. m.rc_result
+           = adD_err('0503')
+           RETURN .F.
+      ENDIF
+      IF  .NOT. m.ro_result
+           = adD_err('0502')
+           RETURN .F.
+      ENDIF
+      IF  .NOT. m.baIlout
+           = laRge_prom('PRESS & HOLD RECLINE SWITCH UP...',0)
+           m.rs_result = .F.
+           m.inLoop = .F.
+           m.skIpcount = 0
+           = swCrttimer(1,(swSecond*m.op_reclup))
+           DO WHILE swGtimer(1)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                m.cuRrent = reAd_atod1()
+                IF (m.cuRrent>=m.reBk_run) .AND.  .NOT. m.inLoop
+                     = swRestrttm(1,swSecond*m.op_reclup)
+                     m.inLoop = .T.
+                ENDIF
+                IF m.inLoop .AND. (m.cuRrent<m.reBk_run)
+                     m.skIpcount = m.skIpcount+1
+                     IF m.skIpcount>2
+                          = swDsytimer(1)
+                          = adD_err('0505')
+                          = clEarpromp()
+                          RETURN .F.
+                     ENDIF
+                ELSE
+                     m.skIpcount = 0
+                ENDIF
+                IF m.inLoop .AND. (m.cuRrent>=m.reFwstall)
+                     m.rs_result = .T.
+                     EXIT
+                ENDIF
+           ENDDO
+           IF  .NOT. rs_result
+                = swDsytimer(1)
+                = clEarpromp()
+                = adD_err('0504')
+                RETURN .F.
+           ELSE
+                IF  .NOT. m.baIlout
+                     = laRge_prom('RELEASE RECLINE SWITCH...',1)
+                     = swCrttimer(2,swSecond*m.op_reclrel)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               = adD_err('0000')
+                               EXIT
+                          ENDIF
+                          m.cuRrent = reAd_atod1()
+                          IF m.cuRrent<m.reBk_run
+                               = swDsytimer(1)
+                               = swDsytimer(2)
+                               = clEarpromp()
+                               RETURN .T.
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                     = swDsytimer(2)
+                     = adD_err('0502')
+                     = clEarpromp()
+                     RETURN .F.
+                ENDIF
+                = clEarpromp()
+                = swDsytimer(1)
+                = swDsytimer(2)
+           ENDIF
+      ENDIF
+ ELSE
+      = seNd_scp('RELAY07ON')
+      = laRge_prom('PRESS THE RECLINE SWITCH DOWN...',0)
+      = swCrttimer(1,(swSecond*m.op_recldn))
+      DO WHILE swGtimer(1)>0
+           IF baIlout()
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           IF geTscp()=0
+                IF swBitand(m.r_Byte3,64)=64
+                     = laRge_prom('RELEASE THE RECLINE SWITCH...',1)
+                     = swCrttimer(2,(swSecond*m.op_reclrel))
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               = adD_err('0000')
+                               EXIT
+                          ENDIF
+                          IF geTscp()=0
+                               IF swBitand(m.r_Byte3,64)=0
+                                    = seNd_scp('RELAY07OFF')
+                                    = seNd_scp('RELAY08ON')
+                                    = laRge_prom( ;
+                                      'PRESS THE RECLINE SWITCH UP...',0)
+                                    = swCrttimer(3,(swSecond*m.op_reclup))
+                                    DO WHILE swGtimer(3)>0
+                                         IF baIlout()
+                                              = adD_err('0000')
+                                              EXIT
+                                         ENDIF
+                                         IF geTscp()=0
+                                              IF swBitand(m.r_Byte3,64)=64
+                                                   = laRge_prom( ;
+                                                    'RELEASE THE RECLINE SWITCH...', ;
+                                                    1)
+                                                   = swCrttimer(4, ;
+                                                    (swSecond*m.op_reclrel))
+                                                   DO WHILE swGtimer(4)>0
+                                                        IF baIlout()
+                                                             = adD_err('0000')
+                                                             EXIT
+                                                        ENDIF
+                                                        IF geTscp()=0
+                                                             IF  ;
+                                                              swBitand(m.r_Byte3, ;
+                                                              64)=0
+                                                                  = swDsytimer(1)
+                                                                  = swDsytimer(2)
+                                                                  = swDsytimer(3)
+                                                                  = swDsytimer(4)
+                                                                  = seNd_scp('RELAY07OFF')
+                                                                  = seNd_scp('RELAY08OFF')
+                                                                  = clEarpromp()
+                                                                  RETURN .T.
+                                                             ENDIF
+                                                        ENDIF
+                                                   ENDDO
+                                                   = adD_err('0802')
+                                                   = swDsytimer(1)
+                                                   = swDsytimer(2)
+                                                   = swDsytimer(3)
+                                                   = swDsytimer(4)
+                                                   = seNd_scp('RELAY07OFF')
+                                                   = seNd_scp('RELAY08OFF')
+                                                   = clEarpromp()
+                                                   RETURN .F.
+                                              ENDIF
+                                         ENDIF
+                                    ENDDO
+                                    = adD_err('0801')
+                                    = swDsytimer(1)
+                                    = swDsytimer(2)
+                                    = swDsytimer(3)
+                                    = seNd_scp('RELAY07OFF')
+                                    = seNd_scp('RELAY08OFF')
+                                    = clEarpromp()
+                                    RETURN .F.
+                               ENDIF
+                          ENDIF
+                     ENDDO
+                     = adD_err('0804')
+                     = swDsytimer(1)
+                     = swDsytimer(2)
+                     = seNd_scp('RELAY07OFF')
+                     = seNd_scp('RELAY08OFF')
+                     = clEarpromp()
+                     RETURN .F.
+                ENDIF
+           ENDIF
+      ENDDO
+      = adD_err('0803')
+      = swDsytimer(1)
+      = seNd_scp('RELAY07OFF')
+      = seNd_scp('RELAY08OFF')
+ ENDIF
+ = clEarpromp()
+ = swDaltimer()
+ RETURN .F.
+*
+FUNCTION muStlumbar
+ PRIVATE goTit, cuRrdraw
+ DIMENSION luMbar[ 2]
+ = swDaltimer()
+ m.r_Byte3 = 0
+ m.r_Byte4 = 0
+ m.l = 0
+ luMbar[ 1] = .F.
+ luMbar[ 2] = .F.
+ m.goTit = .F.
+ cuRrdraw = 0
+ m.goTit = .F.
+ = laRge_prom('PRESS & HOLD LUMBAR *OUT* SWITCH...',0)
+ = swCrttimer(1,(swSecond*m.cfGshwait))
+ DO WHILE swGtimer(1)>0
+      m.cuRrdraw = reAd_atod1()
+      IF m.cuRrdraw>0
+           m.goTit = .T.
+           EXIT
+      ENDIF
+ ENDDO
+ = swDsytimer(1)
+ IF m.goTit=.F.
+      = adD_err('0000')
+      RETURN .F.
+ ELSE
+      m.goTit = .F.
+ ENDIF
+ = swCrttimer(1,(swSecond*m.op_mlout))
+ DO WHILE swGtimer(1)>0
+      IF baIlout()
+           = adD_err('0000')
+           EXIT
+      ENDIF
+      IF reAd_atod1()>0
+           m.goTit = .T.
+           luMbar[ 1] = .T.
+      ENDIF
+ ENDDO
+ = swDsytimer(1)
+ IF luMbar(1)=.T.
+      m.goTit = .F.
+      = laRge_prom('RELEASE LUMBAR SWITCH...',1)
+      = swCrttimer(1,(swSecond*m.op_mlrel))
+      DO WHILE swGtimer(1)>0
+           IF baIlout()
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           IF reAd_atod1()<=0
+                m.goTit = .T.
+                luMbar[ 2] = .T.
+                EXIT
+           ENDIF
+      ENDDO
+      = swDsytimer(1)
+      IF  .NOT. luMbar(2)
+           = adD_err('0610')
+           EXIT
+      ENDIF
+ ELSE
+      = adD_err('0613')
+      = swDsytimer(1)
+      RETURN (.F.)
+ ENDIF
+ = swDsytimer(1)
+ RETURN (m.goTit)
+*
+FUNCTION teStlumbar
+ PRIVATE l, inLoop, skIpcount, reL_time, goTit, stArttime, stOptime
+ DIMENSION luMbar[ 10]
+ = swDaltimer()
+ m.r_Byte3 = 0
+ m.r_Byte4 = 0
+ m.reL_time = 10
+ STORE .F. TO luMbar
+ m.l = 0
+ m.goTit = .F.
+ IF teSt_lvl(16)
+      IF m.cfG2wylumb
+           = laRge_prom('PRESS & HOLD LUMBAR *IN* SWITCH...',0)
+           = swCrttimer(1,(swSecond*m.op_lout))
+           DO WHILE swGtimer(1)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                IF reAd_atod1()>m.luMbarstal
+                     luMbar[ 1] = .T.
+                     = laRge_prom('RELEASE LUMBAR SWITCH...',1)
+                     = swCrttimer(2,swSecond*m.op_lrel)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               = adD_err('0000')
+                               EXIT
+                          ENDIF
+                          IF reAd_atod1()<=m.luMbarrun
+                               luMbar[ 2] = .T.
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. luMbar(2)
+                          = adD_err('0610')
+                          EXIT
+                     ELSE
+                          EXIT
+                     ENDIF
+                ENDIF
+           ENDDO
+           = swDsytimer(1)
+           IF  .NOT. luMbar(1)
+                = adD_err('0604')
+           ENDIF
+           IF  .NOT. m.baIlout
+                m.goTit = .F.
+                = laRge_prom('PRESS & HOLD LUMBAR *OUT* SWITCH...',0)
+                = swCrttimer(1,(swSecond*m.op_lin))
+                DO WHILE swGtimer(1)>0
+                     IF baIlout()
+                          = adD_err('0000')
+                          EXIT
+                     ENDIF
+                     IF reAd_atod1()>=m.luMbarrun .AND.  .NOT. m.goTit
+                          m.stArttime = SECONDS()
+                          m.goTit = .T.
+                     ENDIF
+                     IF reAd_atod1()>m.luMbarstal
+                          IF  .NOT. m.goTit
+                               m.stArttime = SECONDS()
+                          ENDIF
+                          m.stOptime = SECONDS()
+                          IF (m.stOptime-m.stArttime)<5
+                               = adD_err('0614')
+                               luMbar[ 5] = .F.
+                          ELSE
+                               luMbar[ 5] = .T.
+                          ENDIF
+                          luMbar[ 3] = .T.
+                          = laRge_prom('RELEASE LUMBAR SWITCH...',1)
+                          = swCrttimer(2,swSecond*m.op_lrel)
+                          DO WHILE swGtimer(2)>0
+                               IF baIlout()
+                                    = adD_err('0000')
+                                    EXIT
+                               ENDIF
+                               IF reAd_atod1()<=m.luMbarrun
+                                    luMbar[ 4] = .T.
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                          = swDsytimer(2)
+                          IF  .NOT. luMbar(4)
+                               = adD_err('0609')
+                               EXIT
+                          ELSE
+                               EXIT
+                          ENDIF
+                     ENDIF
+                ENDDO
+                = swDsytimer(1)
+                IF  .NOT. luMbar(3)
+                     = adD_err('0603')
+                ENDIF
+           ENDIF
+           FOR m.l = 1 TO 5
+                IF  .NOT. luMbar(m.l)
+                     = clEarpromp()
+                     RETURN .F.
+                ENDIF
+           ENDFOR
+           = clEarpromp()
+           RETURN .T.
+      ELSE
+           m.goTit = .F.
+           = laRge_prom('PRESS & HOLD LUMBAR OUT SWITCH...',0)
+           = swCrttimer(1,(swSecond*m.op_lout))
+           DO WHILE swGtimer(1)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                IF reAd_atod1()>m.luMbarstal
+                     luMbar[ 1] = .T.
+                     = laRge_prom('RELEASE LUMBAR SWITCH...',1)
+                     = swCrttimer(2,swSecond*m.op_lrel)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               = adD_err('0000')
+                               EXIT
+                          ENDIF
+                          IF reAd_atod1()<=m.luMbarrun
+                               luMbar[ 2] = .T.
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. luMbar(2)
+                          = adD_err('0610')
+                          EXIT
+                     ENDIF
+                ENDIF
+           ENDDO
+           = swDsytimer(1)
+           IF  .NOT. luMbar(1)
+                = adD_err('0604')
+           ENDIF
+           IF  .NOT. m.baIlout
+                m.goTit = .F.
+                = laRge_prom('PRESS & HOLD LUMBAR IN SWITCH...',0)
+                = swCrttimer(1,(swSecond*m.op_lin))
+                DO WHILE swGtimer(1)>0
+                     IF baIlout()
+                          = adD_err('0000')
+                          EXIT
+                     ENDIF
+                     IF reAd_atod1()>=m.luMbarrun .AND.  .NOT. m.goTit
+                          m.stArttime = SECONDS()
+                          m.goTit = .T.
+                     ENDIF
+                     IF reAd_atod1()>m.luMbarstal
+                          IF  .NOT. m.goTit
+                               m.stArttime = SECONDS()
+                          ENDIF
+                          m.stOptime = SECONDS()
+                          IF (m.stOptime-m.stArttime)<5
+                               = adD_err('0614')
+                               luMbar[ 9] = .F.
+                          ELSE
+                               luMbar[ 9] = .T.
+                          ENDIF
+                          luMbar[ 3] = .T.
+                          = laRge_prom('RELEASE LUMBAR SWITCH...',1)
+                          = swCrttimer(2,swSecond*m.op_lrel)
+                          DO WHILE swGtimer(2)>0
+                               IF baIlout()
+                                    = adD_err('0000')
+                                    EXIT
+                               ENDIF
+                               IF reAd_atod1()<=m.luMbarrun
+                                    luMbar[ 4] = .T.
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                          = swDsytimer(2)
+                          IF  .NOT. luMbar(4)
+                               = adD_err('0609')
+                               EXIT
+                          ELSE
+                               EXIT
+                          ENDIF
+                     ENDIF
+                ENDDO
+                = swDsytimer(1)
+                IF  .NOT. luMbar(3)
+                     = adD_err('0603')
+                ENDIF
+           ENDIF
+           IF  .NOT. m.baIlout
+                = laRge_prom('PRESS & HOLD LUMBAR UP SWITCH...',0)
+                = swCrttimer(1,(swSecond*m.op_lup))
+                DO WHILE swGtimer(1)>0
+                     IF baIlout()
+                          = adD_err('0000')
+                          EXIT
+                     ENDIF
+                     IF reAd_atod1()>m.luMbarstal
+                          luMbar[ 5] = .T.
+                          = laRge_prom('RELEASE LUMBAR SWITCH...',1)
+                          = swCrttimer(2,swSecond*m.op_lrel)
+                          DO WHILE swGtimer(2)>0
+                               IF baIlout()
+                                    = adD_err('0000')
+                                    EXIT
+                               ENDIF
+                               IF reAd_atod1()<=m.luMbarrun
+                                    luMbar[ 6] = .T.
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                          = swDsytimer(2)
+                          IF  .NOT. luMbar(6)
+                               = adD_err('0607')
+                               EXIT
+                          ELSE
+                               EXIT
+                          ENDIF
+                     ENDIF
+                ENDDO
+                = swDsytimer(1)
+                IF  .NOT. luMbar(5)
+                     = adD_err('0601')
+                ENDIF
+           ENDIF
+           IF  .NOT. m.baIlout
+                m.goTit = .F.
+                = laRge_prom('PRESS & HOLD LUMBAR DOWN SWITCH...',0)
+                = swCrttimer(1,(swSecond*m.op_ldn))
+                DO WHILE swGtimer(1)>0
+                     IF baIlout()
+                          = adD_err('0000')
+                          EXIT
+                     ENDIF
+                     IF reAd_atod1()>=m.luMbarrun .AND.  .NOT. m.goTit
+                          m.stArttime = SECONDS()
+                          m.goTit = .T.
+                     ENDIF
+                     IF reAd_atod1()>m.luMbarstal
+                          IF  .NOT. m.goTit
+                               m.stArttime = SECONDS()
+                          ENDIF
+                          m.stOptime = SECONDS()
+                          IF (m.stOptime-m.stArttime)<5
+                               = adD_err('0615')
+                               luMbar[ 10] = .F.
+                          ELSE
+                               luMbar[ 10] = .T.
+                          ENDIF
+                          luMbar[ 7] = .T.
+                          = laRge_prom('RELEASE LUMBAR SWITCH...',1)
+                          = swCrttimer(2,swSecond*m.op_lrel)
+                          DO WHILE swGtimer(2)>0
+                               IF baIlout()
+                                    = adD_err('0000')
+                                    EXIT
+                               ENDIF
+                               IF reAd_atod1()<=m.luMbarrun
+                                    luMbar[ 8] = .T.
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                          = swDsytimer(2)
+                          IF  .NOT. luMbar(8)
+                               = adD_err('0608')
+                               EXIT
+                          ELSE
+                               EXIT
+                          ENDIF
+                     ENDIF
+                ENDDO
+                = swDsytimer(1)
+                IF  .NOT. luMbar(7)
+                     = adD_err('0602')
+                ENDIF
+           ENDIF
+           FOR m.l = 1 TO 10
+                IF  .NOT. luMbar(m.l)
+                     = clEarpromp()
+                     RETURN .F.
+                ENDIF
+           ENDFOR
+           = clEarpromp()
+           RETURN .T.
+      ENDIF
+ ELSE
+      = laRge_prom('PRESS & HOLD LUMBAR SWITCH FORWARD...',0)
+      m.inLoop = .F.
+      m.skIpcount = 0
+      = swCrttimer(9,(swSecond*m.op_bagfwd))
+      DO WHILE swGtimer(9)>0
+           IF baIlout()
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           m.cuRrent = reAd_atod1()
+           IF (m.cuRrent>=m.luMbardrop) .AND.  .NOT. m.inLoop
+                IF m.viEwit
+                     ACTIVATE WINDOW viEwwin
+                     ? 'Lumbar Detected.'
+                ENDIF
+                = swRestrttm(9,swSecond*m.inFlatetim)
+                m.inLoop = .T.
+           ENDIF
+           IF m.inLoop .AND. (m.cuRrent<m.luMbardrop)
+                m.skIpcount = m.skIpcount+1
+                IF m.skIpcount>2
+                     IF m.viEwit
+                          ACTIVATE WINDOW viEwwin
+                          ? 'Lumbar Not Detected.'
+                     ENDIF
+                     = swDsytimer(9)
+                     = adD_err('0612')
+                     = clEarpromp()
+                     RETURN .F.
+                ENDIF
+           ELSE
+                m.skIpcount = 0
+           ENDIF
+           IF m.inLoop .AND. ((m.cuRrent>m.reBkstall) .OR. (m.cuRrent> ;
+              m.reFwstall))
+                = swDsytimer(9)
+                = adD_err('0611')
+                = clEarpromp()
+                RETURN .F.
+           ENDIF
+      ENDDO
+      = swDsytimer(9)
+      IF  .NOT. m.inLoop
+           = adD_err('0605')
+           = clEarpromp()
+           RETURN .F.
+      ENDIF
+      IF  .NOT. m.baIlout
+           = laRge_prom('RELEASE LUMBAR SWITCH...',1)
+           = swCrttimer(2,swSecond*m.op_bagrel)
+           DO WHILE swGtimer(2)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                m.cuRrent = reAd_atod1()
+                IF m.cuRrent<=m.luMbardrop
+                     = swDsytimer(2)
+                     = clEarpromp()
+                     IF m.cfGbagpmpt
+                          IF  .NOT. in_prompt('Did the Lumbar Bag Fill?')
+                               = adD_err('0613')
+                               RETURN .F.
+                          ELSE
+                               RETURN .T.
+                          ENDIF
+                     ELSE
+                          RETURN .T.
+                     ENDIF
+                ENDIF
+           ENDDO
+           = swDsytimer(2)
+           = adD_err('0606')
+           = clEarpromp()
+           RETURN .F.
+      ENDIF
+ ENDIF
+ = clEarpromp()
+ = swDaltimer()
+ RETURN .F.
+*
+FUNCTION teStschukr
+ PRIVATE l, inLoop, skIpcount, reL_time, goTit, stArttime, stOptime
+ DIMENSION luMbar[ 10]
+ = swDaltimer()
+ m.r_Byte3 = 0
+ m.r_Byte4 = 0
+ m.reL_time = 10
+ STORE .F. TO luMbar
+ m.l = 0
+ m.goTit = .F.
+ m.goTit = .F.
+ = laRge_prom('PRESS & HOLD LUMBAR *IN* SWITCH...',0)
+ = swCrttimer(1,(swSecond*m.skIntime))
+ DO WHILE swGtimer(1)>0
+      IF baIlout()
+           = adD_err('0000')
+           EXIT
+      ENDIF
+      IF reAd_atod1()>=m.skStallcur
+           luMbar[ 1] = .T.
+           m.goTit = .F.
+           = laRge_prom('RELEASE LUMBAR SWITCH...',1)
+           = swCrttimer(2,swSecond*m.skRelease)
+           DO WHILE swGtimer(2)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                IF reAd_atod1()<=m.skRunmax
+                     luMbar[ 2] = .T.
+                     m.goTit = .T.
+                     EXIT
+                ENDIF
+           ENDDO
+           = swDsytimer(2)
+           IF  .NOT. luMbar(2)
+                = adD_err('0614')
+                EXIT
+           ELSE
+                EXIT
+           ENDIF
+      ENDIF
+ ENDDO
+ = swDsytimer(1)
+ IF  .NOT. luMbar(1)
+      = adD_err('0603')
+ ENDIF
+ IF  .NOT. m.baIlout
+      m.goTit = .F.
+      = laRge_prom('PRESS & HOLD LUMBAR *OUT* SWITCH...',0)
+      = swCrttimer(1,(swSecond*m.skOuttime))
+      DO WHILE swGtimer(1)>0
+           IF baIlout()
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           IF reAd_atod1()>=m.skRunmax .AND.  .NOT. m.goTit
+                m.stArttime = SECONDS()
+                m.goTit = .T.
+           ENDIF
+           IF reAd_atod1()>m.skStallcur
+                IF  .NOT. m.goTit
+                     m.stArttime = SECONDS()
+                ENDIF
+                m.stOptime = SECONDS()
+                IF (m.stOptime-m.stArttime)>m.skOuttime
+                     = adD_err('0610')
+                     luMbar[ 5] = .F.
+                ELSE
+                     luMbar[ 5] = .T.
+                ENDIF
+                luMbar[ 3] = .T.
+                m.goTit = .F.
+                = laRge_prom('RELEASE LUMBAR SWITCH...',1)
+                = swCrttimer(2,swSecond*m.skRelease)
+                DO WHILE swGtimer(2)>0
+                     IF baIlout()
+                          = adD_err('0000')
+                          EXIT
+                     ENDIF
+                     IF reAd_atod1()<=m.skRunmax
+                          m.goTit = .T.
+                          luMbar[ 4] = .T.
+                          EXIT
+                     ENDIF
+                ENDDO
+                = swDsytimer(2)
+                IF  .NOT. luMbar(4)
+                     = adD_err('0610')
+                     EXIT
+                ELSE
+                     EXIT
+                ENDIF
+           ENDIF
+      ENDDO
+      = swDsytimer(1)
+      IF  .NOT. luMbar(3)
+           = adD_err('0604')
+      ENDIF
+ ENDIF
+ FOR m.l = 1 TO 5
+      IF  .NOT. luMbar(m.l)
+           = clEarpromp()
+           RETURN .F.
+      ENDIF
+ ENDFOR
+ = clEarpromp()
+ RETURN .T.
+*
+FUNCTION teStheat
+ PRIVATE heAtresult, heAtvalue
+ m.heAtvalue = 0
+ m.heAtresult = .T.
+ WAIT WINDOW NOWAIT 'Testing Seatback Heat On...'
+ = seNd_scp('RELAY09ON')
+ = swCrttimer(5,0090)
+ DO WHILE (swGtimer(5)>0)
+      IF baIlout()
+           = adD_err('0000')
+           m.heAtresult = .F.
+           EXIT
+      ENDIF
+ ENDDO
+ = swDsytimer(5)
+ m.heAtvalue = reAd_atod1()
+ IF m.heAtvalue<m.heAt1 .OR. m.heAtvalue>m.heAt2
+      = adD_err('0701')
+      m.heAtresult = .F.
+      IF m.viEwit
+           ACTIVATE WINDOW viEwwin
+           ? 'Failed Seatback on'
+      ENDIF
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Testing Cushion Heat On...'
+      = seNd_scp('RELAY10ON')
+      = swCrttimer(5,0090)
+      DO WHILE (swGtimer(5)>0)
+           IF baIlout()
+                m.heAtresult = .F.
+                = adD_err('0000')
+                EXIT
+           ENDIF
+      ENDDO
+      = swDsytimer(5)
+      m.heAtvalue = reAd_atod1()
+      IF (m.heAtvalue)<m.heAt2 .OR. (m.heAtvalue)>m.heAt3
+           = adD_err('0702')
+           m.heAtresult = .F.
+           IF m.viEwit
+                ACTIVATE WINDOW viEwwin
+                ? 'Failed Cushion on'
+           ENDIF
+      ENDIF
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Testing Cushion Heat Off...'
+      = seNd_scp('RELAY10OFF')
+      = swCrttimer(5,0090)
+      DO WHILE (swGtimer(5)>0)
+           IF baIlout()
+                m.heAtresult = .F.
+                = adD_err('0000')
+                EXIT
+           ENDIF
+      ENDDO
+      = swDsytimer(5)
+      m.heAtvalue = reAd_atod1()
+      IF (m.heAtvalue)<m.heAt1 .OR. (m.heAtvalue)>m.heAt2
+           = adD_err('0703')
+           m.heAtresult = .F.
+           IF m.viEwit
+                ACTIVATE WINDOW viEwwin
+                ? 'Failed Cushion off'
+           ENDIF
+      ENDIF
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Testing Seatback Heat Off...'
+      = seNd_scp('RELAY09OFF')
+      = swCrttimer(5,0090)
+      DO WHILE (swGtimer(5)>0)
+           IF baIlout()
+                m.heAtresult = .F.
+                = adD_err('0000')
+                EXIT
+           ENDIF
+      ENDDO
+      = swDsytimer(5)
+      m.heAtvalue = reAd_atod1()
+      IF (m.heAtvalue)>m.heAtoff
+           = adD_err('0704')
+           m.heAtresult = .F.
+           IF m.viEwit
+                ACTIVATE WINDOW viEwwin
+                ? 'Failed Seatback off'
+           ENDIF
+      ENDIF
+      WAIT CLEAR
+ ENDIF
+ RETURN m.heAtresult
+*
+FUNCTION un93testhe
+ PRIVATE heAtresult, heAtvalue, usEranswer
+ m.heAtresult = .T.
+ m.heAtvalue = 0
+ m.usEranswer = .F.
+ = swCrttimer(1,(swSecond*m.un93swtime))
+ = laRge_prom('Cycle heat switch on...',0)
+ DO WHILE swGtimer(1)>0
+      IF baIlout()
+           = adD_err('0000')
+           EXIT
+      ENDIF
+      IF reAd_atod1()>0
+           EXIT
+      ENDIF
+ ENDDO
+ = swDsytimer(1)
+ = swCrttimer(1,(swSecond*m.un93swtime))
+ DO WHILE swGtimer(1)>0
+      IF baIlout()
+           = adD_err('0000')
+           EXIT
+      ENDIF
+      IF  .NOT. in_prompt('Is the switch light indicator on?')
+           = adD_err('0706')
+           m.heAtresult = .F.
+           EXIT
+      ELSE
+           WAIT WINDOW NOWAIT 'Cycling Heat On...'
+           = un93hton()
+           WAIT WINDOW NOWAIT 'Cushion Heat ON'
+           = swCrttimer(5,(swSecond*m.un93httime))
+           DO WHILE (swGtimer(5)>0)
+                IF baIlout()
+                     = adD_err('0000')
+                     m.heAtresult = .F.
+                     EXIT
+                ENDIF
+                m.heAtvalue = reAd_atod1()
+                IF m.heAtvalue<m.un93htlow .OR. m.heAtvalue>m.un93hthigh
+                     = adD_err('0707')
+                     m.heAtresult = .F.
+                     IF m.viEwit
+                          ACTIVATE WINDOW viEwwin
+                          ? 'Failed Heat on'
+                          = un93htoff()
+                          EXIT
+                     ENDIF
+                ELSE
+                     m.heAtresult = .T.
+                ENDIF
+           ENDDO
+           = swDsytimer(5)
+           IF  .NOT. m.heAtresult
+                EXIT
+           ENDIF
+           = swDsytimer(1)
+           = swDsytimer(5)
+           = swCrttimer(1,(swSecond*m.un93swtime))
+           = laRge_prom('Cycle heat switch off...',0)
+           DO WHILE swGtimer(1)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                IF reAd_atod1()=0
+                     EXIT
+                ENDIF
+           ENDDO
+           = swDsytimer(1)
+           = swCrttimer(1,(swSecond*m.un93swtime))
+           DO WHILE swGtimer(1)>0
+                IF baIlout()
+                     = adD_err('0000')
+                     EXIT
+                ENDIF
+                IF  .NOT. in_prompt('Is the switch light indicator off?')
+                     = adD_err('0706')
+                     m.heAtresult = .F.
+                     EXIT
+                ELSE
+                     WAIT WINDOW NOWAIT 'Cycling Heat Off...'
+                     = un93htoff()
+                     WAIT WINDOW NOWAIT 'Testing Cushion Heat Off...'
+                     = swCrttimer(5,(swSecond*m.un93httime))
+                     DO WHILE (swGtimer(5)>0)
+                          IF baIlout()
+                               = adD_err('0000')
+                               m.heAtresult = .F.
+                               EXIT
+                          ENDIF
+                          m.heAtvalue = reAd_atod1()
+                          IF m.heAtvalue<>0
+                               = adD_err('0703')
+                               m.heAtresult = .F.
+                               IF m.viEwit
+                                    ACTIVATE WINDOW viEwwin
+                                    ? 'Failed Heat off'
+                                    = un93htoff()
+                                    EXIT
+                               ENDIF
+                          ELSE
+                               m.heAtresult = .T.
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(5)
+                     IF  .NOT. m.heAtresult
+                          EXIT
+                     ENDIF
+                ENDIF
+           ENDDO
+           IF  .NOT. m.heAtresult
+                EXIT
+           ENDIF
+      ENDIF
+ ENDDO
+ = swDsytimer(1)
+ = swDsytimer(5)
+ WAIT CLEAR
+ RETURN m.heAtresult
+*
+FUNCTION heAtdetect
+ PRIVATE heAtresult, heAtvalue
+ m.heAtvalue = 0
+ m.heAtresult = .F.
+ WAIT WINDOW NOWAIT 'Checking for presence of heat module...'
+ = seNd_scp('RELAY09ON')
+ = seNd_scp('RELAY10ON')
+ = swCrttimer(5,0090)
+ DO WHILE (swGtimer(5)>0)
+      IF baIlout()
+           = adD_err('0000')
+           m.heAtresult = .F.
+           EXIT
+      ENDIF
+ ENDDO
+ = swDsytimer(5)
+ m.heAtvalue = reAd_atod1()
+ IF (m.heAtvalue)>m.heAtoff
+      = adD_err('0705')
+      m.heAtresult = .T.
+      IF m.viEwit
+           ACTIVATE WINDOW viEwwin
+           ? 'ERROR: Heat module detected'
+      ENDIF
+ ENDIF
+ WAIT WINDOW NOWAIT 'Exiting heat test...'
+ = seNd_scp('RELAY10OFF')
+ = seNd_scp('RELAY09OFF')
+ = swCrttimer(5,0090)
+ DO WHILE (swGtimer(5)>0)
+      IF baIlout()
+           m.heAtresult = .F.
+           = adD_err('0000')
+           EXIT
+      ENDIF
+ ENDDO
+ = swDsytimer(5)
+ WAIT CLEAR
+ RETURN m.heAtresult
+*
+FUNCTION teStroft
+ PRIVATE teSt_resul
+ m.teSt_resul = .T.
+ WAIT WINDOW NOWAIT 'Testing Rate-of-Travel...'
+ DO boX_cycle
+ = adD_err('1001')
+ m.teSt_resul = .F.
+ RETURN m.teSt_resul
+*
+FUNCTION teStbelt
+ DO WHILE (geTscp()=-129)
+ ENDDO
+ IF seNd_scp('PORT00IN')
+      IF geTscp()=0
+           IF swBitand(m.r_Byte3,21)=0
+                = laRge_prom('REMOVE SEAT BELT BUCKLE...',1)
+                = swCrttimer(1,(swSecond*m.op_sbout))
+                DO WHILE swGtimer(1)>0
+                     IF baIlout()
+                          = adD_err('0000')
+                          EXIT
+                     ENDIF
+                     IF geTscp()=0
+                          IF swBitand(m.r_Byte3,21)=1 .OR.  ;
+                             swBitand(m.r_Byte3,21)=4 .OR.  ;
+                             swBitand(m.r_Byte3,21)=16
+                               EXIT
+                          ENDIF
+                     ENDIF
+                ENDDO
+                = swDsytimer(1)
+           ENDIF
+      ENDIF
+ ENDIF
+ IF swBitand(m.r_Byte3,21)=0
+      = adD_err('1101')
+      = clEarpromp()
+      RETURN .F.
+ ENDIF
+ IF  .NOT. m.baIlout
+      = laRge_prom('INSERT SEAT BELT BUCKLE...',0)
+      = swCrttimer(1,(swSecond*m.op_sbin))
+      DO WHILE swGtimer(1)>0
+           IF baIlout()
+                = adD_err('0000')
+                EXIT
+           ENDIF
+           IF geTscp()=0
+                IF swBitand(m.r_Byte3,21)=0
+                     = laRge_prom('REMOVE SEAT BELT BUCKLE...',1)
+                     = swCrttimer(2,(swSecond*m.op_sbout))
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               = adD_err('0000')
+                               EXIT
+                          ENDIF
+                          IF geTscp()=0
+                               IF swBitand(m.r_Byte3,21)=1 .OR.  ;
+                                  swBitand(m.r_Byte3,21)=4 .OR.  ;
+                                  swBitand(m.r_Byte3,21)=16
+                                    = swDsytimer(1)
+                                    = swDsytimer(2)
+                                    = clEarpromp()
+                                    RETURN .T.
+                               ENDIF
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                     = swDsytimer(2)
+                     = adD_err('1101')
+                     = clEarpromp()
+                     RETURN .F.
+                ENDIF
+           ENDIF
+      ENDDO
+      = swDsytimer(1)
+      = swDsytimer(2)
+      = adD_err('1102')
+      WAIT CLEAR
+      = clEarpromp()
+ ENDIF
+ RETURN .F.
+*
+FUNCTION teStoccup
+ = laRge_prom('PRESS CUSHION...',0)
+ = swCrttimer(1,(swSecond*m.op_cushpr))
+ DO WHILE swGtimer(1)>0
+      IF baIlout()
+           = adD_err('0000')
+           EXIT
+      ENDIF
+      IF geTscp()=0
+           IF swBitand(m.r_Byte3,42)=2 .OR. swBitand(m.r_Byte3,42)=8 .OR.  ;
+              swBitand(m.r_Byte3,42)=32
+                = laRge_prom('STOP PRESSING CUSHION...',1)
+                = swCrttimer(2,(swSecond*m.op_cushrel))
+                DO WHILE swGtimer(2)>0
+                     IF baIlout()
+                          = adD_err('0000')
+                          EXIT
+                     ENDIF
+                     IF geTscp()=0
+                          IF swBitand(m.r_Byte3,42)=0
+                               = swDsytimer(2)
+                               = swDsytimer(1)
+                               = clEarpromp()
+                               RETURN .T.
+                          ENDIF
+                     ENDIF
+                ENDDO
+                = swDsytimer(1)
+                = swDsytimer(2)
+                = adD_err('1201')
+                WAIT CLEAR
+                = clEarpromp()
+                RETURN .F.
+           ENDIF
+      ENDIF
+ ENDDO
+ = swDsytimer(1)
+ = swDsytimer(2)
+ = adD_err('1202')
+ WAIT CLEAR
+ = clEarpromp()
+ RETURN .F.
+*
+FUNCTION teStphone
+ PRIVATE teSt_resul
+ m.teSt_resul = in_prompt('Did the Telephone Work?')
+ IF  .NOT. m.teSt_resul
+      = adD_err('1301')
+ ENDIF
+ RETURN m.teSt_resul
+*
+FUNCTION teStpowerp
+ PRIVATE teSt_resul
+ m.teSt_resul = in_prompt('Did the Power Point Work?')
+ IF  .NOT. m.teSt_resul
+      = adD_err('1301')
+ ENDIF
+ RETURN m.teSt_resul
+*
+FUNCTION seNd_iso
+ PARAMETER meSs
+ PRIVATE i, j, k
+ DIMENSION heAdarray[ 3]
+ DIMENSION thEadarray[ 3]
+ DIMENSION daTaarray[ 7]
+ DIMENSION tdAtaarray[ 7]
+ DIMENSION meSsarray[ 11]
+ STORE '' TO thEadarray, tdAtaarray
+ STORE 0 TO heAdarray, daTaarray
+ STORE '' TO meSsarray
+ m.i = 0
+ m.j = 0
+ m.k = 0
+ SELECT 0
+ USE NOUPDATE (m.ciSo_mess) ALIAS isO_mess ORDER MESSAGENO
+ IF SEEK(UPPER(ALLTRIM(m.meSs)), 'ISO_MESS')
+      SELECT isO_mess
+      SCATTER TO thEadarray FIELDS prIor_type, taRget
+      SCATTER TO tdAtaarray FIELDS byTe1, byTe2, byTe3, byTe4, byTe5,  ;
+              byTe6, byTe7
+      heAdarray[ 1] = coNvert(thEadarray(1))
+      heAdarray[ 2] = coNvert(thEadarray(2))
+      daTaarray[ 1] = coNvert(tdAtaarray(1))
+      daTaarray[ 2] = coNvert(tdAtaarray(2))
+      daTaarray[ 3] = coNvert(tdAtaarray(3))
+      daTaarray[ 4] = coNvert(tdAtaarray(4))
+      daTaarray[ 5] = coNvert(tdAtaarray(5))
+      daTaarray[ 6] = coNvert(tdAtaarray(6))
+      daTaarray[ 7] = coNvert(tdAtaarray(7))
+      meSsarray = meSsarray+CHR(heAdarray(1))
+      meSsarray = meSsarray+CHR(heAdarray(2))
+      meSsarray = meSsarray+CHR(coNvert(m.soUrce))
+      FOR m.i = 1 TO isO_mess.nuMofbytes
+           meSsarray = meSsarray+CHR(daTaarray(m.i))
+      ENDFOR
+      meSsarray = meSsarray+CHR(chKsum(meSsarray,3+m.i))
+      DIMENSION meSsarray[ 3+m.i]
+ ELSE
+      = swRingbell()
+      WAIT WINDOW NOWAIT 'ISO-9141 Message Not Found in ISO-9141 Database!'
+      USE IN isO_mess
+      RETURN .F.
+ ENDIF
+ = swFlushrx(coM1)
+ = swTxbuffer(coM1,meSsarray)
+ USE IN isO_mess
+ RETURN .T.
+*
+FUNCTION chKsum
+ PARAMETER teMparray, meSsbytes
+ PRIVATE i, chEcksum
+ m.i = 0
+ m.chEcksum = 0
+ FOR m.i = 1 TO m.meSsbytes
+      m.chEcksum = m.chEcksum+ASC(SUBSTR(teMparray, m.i, 1))
+ ENDFOR
+ RETURN swBitand(m.chEcksum,255)
+*
+FUNCTION coNvert
+ PARAMETER heX
+ PRIVATE vaLue, l, r
+ m.vaLue = 0
+ m.l = 0
+ m.r = 0
+ IF  .NOT. EMPTY(m.heX)
+      DO CASE
+           CASE UPPER(LEFT(heX, 1))='A'
+                m.l = 00160
+           CASE UPPER(LEFT(heX, 1))='B'
+                m.l = 00176
+           CASE UPPER(LEFT(heX, 1))='C'
+                m.l = 00192
+           CASE UPPER(LEFT(heX, 1))='D'
+                m.l = 00208
+           CASE UPPER(LEFT(heX, 1))='E'
+                m.l = 00224
+           CASE UPPER(LEFT(heX, 1))='F'
+                m.l = 00240
+           OTHERWISE
+                m.l = VAL(LEFT(heX, 1))*16
+      ENDCASE
+      DO CASE
+           CASE UPPER(RIGHT(heX, 1))='A'
+                m.r = 10
+           CASE UPPER(RIGHT(heX, 1))='B'
+                m.r = 11
+           CASE UPPER(RIGHT(heX, 1))='C'
+                m.r = 12
+           CASE UPPER(RIGHT(heX, 1))='D'
+                m.r = 13
+           CASE UPPER(RIGHT(heX, 1))='E'
+                m.r = 14
+           CASE UPPER(RIGHT(heX, 1))='F'
+                m.r = 15
+           OTHERWISE
+                m.r = VAL(RIGHT(heX, 1))
+      ENDCASE
+      m.vaLue = m.r+m.l
+ ELSE
+      m.vaLue = 0
+ ENDIF
+ RETURN m.vaLue
+*
+FUNCTION geTisoresp
+ PARAMETER poRt
+ PRIVATE chArcount
+ PUSH KEY CLEAR
+ m.chArcount = 0
+ STORE 0 TO rxMessage
+ = swCrttimer(1,15)
+ DO WHILE swGtimer(1)>0
+      IF  .NOT. swRxempty(m.poRt)
+           m.chArcount = m.chArcount+1
+           rxMessage[ m.chArcount] = swRxchar(m.poRt)
+           = swRestrttm(1,2)
+      ENDIF
+ ENDDO
+ IF m.chArcount=0
+      WAIT CLEAR
+      = swRingbell()
+      WAIT WINDOW TIMEOUT 3 'No Response from Module !'+CHR(13)+ ;
+           'Check Cable Connections.'
+      = swDsytimer(1)
+      POP KEY
+      RETURN .F.
+ ENDIF
+ = swDsytimer(1)
+ POP KEY
+ RETURN .T.
+*
+FUNCTION seNd_scp
+ PARAMETER msG
+ IF scP_mess.meSsageno=m.msG
+      SELECT scP_mess
+      SCATTER MEMVAR
+      = seNdscp(m.prIor_type,m.taRget,m.nuMofbytes,m.byTe1+m.byTe2+ ;
+        m.byTe3+m.byTe4+m.byTe5+m.byTe6+m.byTe7)
+ ELSE
+      IF SEEK(UPPER(ALLTRIM(msG)), 'SCP_MESS')
+           SELECT scP_mess
+           SCATTER MEMVAR
+           = seNdscp(m.prIor_type,m.taRget,m.nuMofbytes,m.byTe1+m.byTe2+ ;
+             m.byTe3+m.byTe4+m.byTe5+m.byTe6+m.byTe7)
+      ELSE
+           = swRingbell()
+           WAIT WINDOW NOWAIT 'SCP Message '+msG+ ;
+                ' Not Found in Message Database !'
+           USE IN scP_mess
+           RETURN .F.
+      ENDIF
+ ENDIF
+ RETURN .T.
+*
+PROCEDURE boX_cycle
+ PRIVATE keY
+ PUSH KEY CLEAR
+ m.poInt1 = .F.
+ m.poInt2 = .F.
+ m.poInt3 = .F.
+ m.poInt4 = .F.
+ m.tiMe_hf = 0.0
+ m.tiMe_hr = 0.0
+ m.tiMe_fu = 0.0
+ m.tiMe_fd = 0.0
+ m.tiMe_bu = 0.0
+ m.tiMe_bd = 0.0
+ m.tiMe_rf = 0.0
+ m.tiMe_rr = 0.0
+ m.roT_hf = 0.0
+ m.roT_hr = 0.0
+ m.roT_fu = 0.0
+ m.roT_fd = 0.0
+ m.roT_bu = 0.0
+ m.roT_bd = 0.0
+ m.roT_rf = 0.0
+ m.roT_rr = 0.0
+ SHOW GETS
+ DO WHILE (geTscp()<>-130)
+ ENDDO
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Horizontal Forward...'
+      = moVeloop(7)
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Recline Forward...'
+      = swWait(4)
+      = moVeloop(5)
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Front Up...'
+      = swWait(4)
+      = moVeloop(1)
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Back Up...'
+      = swWait(4)
+      = moVeloop(3)
+      m.poInt1 = .T.
+      SHOW GETS
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Horizontal Rearward...'
+      = swWait(4)
+      m.tiMe_hr = moVeloop(8)
+      m.roT_hr = m.h_Travel/m.tiMe_hr
+      SHOW GETS
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Recline Rearward...'
+      = swWait(4)
+      m.tiMe_rr = moVeloop(6)
+      m.roT_rr = m.r_Travel/m.tiMe_rr
+      m.poInt2 = .T.
+      SHOW GETS
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Front Down...'
+      = swWait(4)
+      m.tiMe_fd = moVeloop(2)
+      m.roT_fd = m.f_Travel/m.tiMe_fd
+      SHOW GETS
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Back Down...'
+      = swWait(4)
+      m.tiMe_bd = moVeloop(4)
+      m.roT_bd = m.b_Travel/m.tiMe_bd
+      m.poInt3 = .T.
+      SHOW GETS
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Horizontal Forward...'
+      = swWait(4)
+      m.tiMe_hf = moVeloop(7)
+      m.roT_hf = m.h_Travel/m.tiMe_hf
+      SHOW GETS
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Recline Forward...'
+      = swWait(4)
+      m.tiMe_rf = moVeloop(5)
+      m.roT_rf = m.r_Travel/m.tiMe_rf
+      m.poInt4 = .T.
+      SHOW GETS
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Front Up...'
+      = swWait(4)
+      m.tiMe_fu = moVeloop(1)
+      m.roT_fu = m.f_Travel/m.tiMe_fu
+      SHOW GETS
+ ENDIF
+ IF  .NOT. m.baIlout
+      WAIT WINDOW NOWAIT 'Back Up...'
+      = swWait(4)
+      m.tiMe_bu = moVeloop(3)
+      m.roT_bu = m.b_Travel/m.tiMe_bu
+      SHOW GETS
+ ENDIF
+ WAIT CLEAR
+ POP KEY
+ RETURN
+*
+PROCEDURE shIpmstng
+ PRIVATE stArttime, stOptime
+ m.stArttime = SECONDS()
+ m.txT0 = 'MOVE SEAT TO SHIPPING POSITION...'
+ m.txT1 = '                          '
+ m.txT2 = 'LINE REAR OF TRACK UP WITH 2nd WINDOW'
+ m.txT3 = ' '
+ m.txT4 = ' '
+ = tiMeprompt(txT0,txT1,txT2,txT3,txT4,60)
+ RETURN
+*
+PROCEDURE shIpit
+ PRIVATE stArttime, stOptime
+ m.stArttime = SECONDS()
+ IF UPPER(ALLTRIM(m.moDuletype))='NONE2'
+      IF  .NOT. teSt_lvl(19)
+           m.txT0 = 'MOVE SEAT TO SHIPPING POSITION...'
+           m.txT1 = 'FRONT TILT: DOWN 5 SECONDS'
+           m.txT2 = 'REAR TILT: FULL UPWARD'
+           m.txT3 = 'HORIZ:LINE REAR OF SHIELD UP WITH TAB'
+           m.txT4 = ' '
+           = tiMeprompt(txT0,txT1,txT2,txT3,txT4,60)
+      ENDIF
+ ELSE
+      WAIT WINDOW NOWAIT 'Moving Seat to Shipping Position...'
+      = baIlout()
+      IF teSt_lvl(5) .AND.  .NOT. m.baIlout
+           IF m.viEwit
+                ACTIVATE WINDOW viEwwin
+                ? 'Moving Recline...'
+           ENDIF
+           IF ((UPPER(ALLTRIM(m.moDuletype))='NONE' .OR.  ;
+              UPPER(ALLTRIM(m.moDuletype))='NONE2') .AND. (teSt_lvl(14)  ;
+              .OR. teSt_lvl(15)))
+                = laRge_prom('MOVE RECLINE TO SHIPPING POSITION...',0)
+                = swWait(swSecond*m.op_reclshp)
+                = clEarpromp()
+           ELSE
+                IF m.cfGrshippo=1
+                     = moVeloop(5)
+                     = baIlout()
+                     IF  .NOT. m.baIlout
+                          IF m.cfGdvrside=1 .AND.  ;
+                             UPPER(ALLTRIM(m.moDuletype))<>'FN-74' .AND.  ;
+                             UPPER(ALLTRIM(m.moDuletype))<>'FN-145'
+                               = moVestep(6,m.r_Time)
+                          ELSE
+                               = moVetime(6,m.r_Time)
+                          ENDIF
+                     ENDIF
+                ELSE
+                     = moVeloop(6)
+                     = baIlout()
+                     IF  .NOT. m.baIlout
+                          IF m.cfGdvrside=1 .AND.  ;
+                             UPPER(ALLTRIM(m.moDuletype))<>'FN-74' .AND.  ;
+                             UPPER(ALLTRIM(m.moDuletype))<>'FN-145'
+                               = moVestep(5,m.r_Time)
+                          ELSE
+                               = moVetime(5,m.r_Time)
+                          ENDIF
+                     ENDIF
+                ENDIF
+                = swWait(1)
+           ENDIF
+      ENDIF
+      = baIlout()
+      IF teSt_lvl(4) .AND.  .NOT. m.baIlout
+           IF m.viEwit
+                ACTIVATE WINDOW viEwwin
+                ? 'Moving Horizontal...'
+           ENDIF
+           IF m.cfGhshippo=1
+                = moVeloop(7)
+                = baIlout()
+                IF  .NOT. m.baIlout
+                     IF m.cfGdvrside=1 .AND. UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'FN-74' .AND. (UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'NONE' .OR. UPPER(ALLTRIM(m.moDuletype))='NONE2')  ;
+                        .AND. UPPER(ALLTRIM(m.moDuletype))<>'FN-145'
+                          = moVestep(8,m.h_Time)
+                     ELSE
+                          = moVetime(8,m.h_Time)
+                     ENDIF
+                ENDIF
+           ELSE
+                = moVeloop(8)
+                = baIlout()
+                IF  .NOT. m.baIlout
+                     IF m.cfGdvrside=1 .AND. UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'FN-74' .AND. (UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'NONE' .OR. UPPER(ALLTRIM(m.moDuletype))='NONE2')  ;
+                        .AND. UPPER(ALLTRIM(m.moDuletype))<>'FN-145'
+                          = moVestep(7,m.h_Time)
+                     ELSE
+                          = moVetime(7,m.h_Time)
+                     ENDIF
+                ENDIF
+           ENDIF
+           = swWait(1)
+      ENDIF
+      = baIlout()
+      IF teSt_lvl(2) .AND.  .NOT. m.baIlout
+           IF m.viEwit
+                ACTIVATE WINDOW viEwwin
+                ? 'Moving Front...'
+           ENDIF
+           IF m.cfGfshippo=1
+                = moVeloop(1)
+                = baIlout()
+                IF  .NOT. m.baIlout
+                     IF m.cfGdvrside=1 .AND. UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'FN-74' .AND. (UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'NONE' .OR. UPPER(ALLTRIM(m.moDuletype))='NONE2')  ;
+                        .AND. UPPER(ALLTRIM(m.moDuletype))<>'FN-145'
+                          = moVestep(2,m.f_Time)
+                     ELSE
+                          = moVetime(2,m.f_Time)
+                     ENDIF
+                ENDIF
+           ELSE
+                = moVeloop(2)
+                = baIlout()
+                IF  .NOT. m.baIlout
+                     IF m.cfGdvrside=1 .AND. UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'FN-74' .AND. (UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'NONE' .OR. UPPER(ALLTRIM(m.moDuletype))='NONE2')  ;
+                        .AND. UPPER(ALLTRIM(m.moDuletype))<>'FN-145'
+                          = moVestep(1,m.f_Time)
+                     ELSE
+                          = moVetime(1,m.f_Time)
+                     ENDIF
+                ENDIF
+           ENDIF
+           = swWait(1)
+      ENDIF
+      = baIlout()
+      IF teSt_lvl(3) .AND.  .NOT. baIlout()
+           IF m.viEwit
+                ACTIVATE WINDOW viEwwin
+                ? 'Moving Rear...'
+           ENDIF
+           IF m.cfGbshippo=1
+                = moVeloop(3)
+                = baIlout()
+                IF  .NOT. m.baIlout
+                     IF m.cfGdvrside=1 .AND. UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'FN-74' .AND. (UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'NONE' .OR. UPPER(ALLTRIM(m.moDuletype))='NONE2')  ;
+                        .AND. UPPER(ALLTRIM(m.moDuletype))<>'FN-145'
+                          = moVestep(4,m.b_Time)
+                     ELSE
+                          = moVetime(4,m.b_Time)
+                     ENDIF
+                ENDIF
+           ELSE
+                = moVeloop(4)
+                = baIlout()
+                IF  .NOT. m.baIlout
+                     IF m.cfGdvrside=1 .AND. UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'FN-74' .AND. (UPPER(ALLTRIM(m.moDuletype))<> ;
+                        'NONE' .OR. UPPER(ALLTRIM(m.moDuletype))='NONE2')  ;
+                        .AND. UPPER(ALLTRIM(m.moDuletype))<>'FN-145'
+                          = moVestep(3,m.b_Time)
+                     ELSE
+                          = moVetime(3,m.b_Time)
+                     ENDIF
+                ENDIF
+           ENDIF
+           = swWait(1)
+      ENDIF
+ ENDIF
+ m.stOptime = SECONDS()
+ IF m.stOptime>=m.stArttime
+      m.shIp_time = stOptime-m.stArttime
+ ELSE
+      m.shIp_time = 86400-stArttime+m.stOptime
+ ENDIF
+ RETURN
+*
+FUNCTION moVeloop
+ PARAMETER chOice
+ PRIVATE nkEy, stArttime, stOptime, loOptime, i
+ m.baIlout = .F.
+ m.stArttime = 0
+ m.stOptime = 0
+ m.stArttime = SECONDS()
+ DO CASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='NONE' .OR.  ;
+           UPPER(ALLTRIM(m.moDuletype))='NONE2' .OR. m.cfGdvrside=2
+           DO CASE
+                CASE m.chOice=1
+                     = seNd_scp('RELAY01OFF')
+                     = seNd_scp('RELAY02ON')
+                     = swWait(2)
+                     = swCrttimer(1,(swSecond*m.frOnstall))
+                     DO WHILE swGtimer(1)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          IF stAll(m.frUpstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                     = seNd_scp('RELAY01OFF')
+                     = seNd_scp('RELAY02OFF')
+                CASE m.chOice=2
+                     = seNd_scp('RELAY01ON')
+                     = seNd_scp('RELAY02OFF')
+                     = swWait(2)
+                     = swCrttimer(1,(swSecond*m.frOnstall))
+                     DO WHILE swGtimer(1)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          IF stAll(m.frDnstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                     = seNd_scp('RELAY01OFF')
+                     = seNd_scp('RELAY02OFF')
+                CASE m.chOice=3
+                     = seNd_scp('RELAY05ON')
+                     = seNd_scp('RELAY06OFF')
+                     = swWait(2)
+                     = swCrttimer(1,(swSecond*m.baCkstall))
+                     DO WHILE swGtimer(1)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          IF stAll(m.bkUpstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                     = seNd_scp('RELAY05OFF')
+                     = seNd_scp('RELAY06OFF')
+                CASE m.chOice=4
+                     = seNd_scp('RELAY06ON')
+                     = seNd_scp('RELAY05OFF')
+                     = swWait(2)
+                     = swCrttimer(1,(swSecond*m.baCkstall))
+                     DO WHILE swGtimer(1)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          IF stAll(m.bkDnstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                     = seNd_scp('RELAY06OFF')
+                     = seNd_scp('RELAY05OFF')
+                CASE m.chOice=5
+                     = seNd_scp('RELAY07ON')
+                     = seNd_scp('RELAY08OFF')
+                     = swWait(2)
+                     = swCrttimer(1,(swSecond*m.reClstall))
+                     DO WHILE swGtimer(1)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          IF stAll(m.reFwstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                     = seNd_scp('RELAY07OFF')
+                     = seNd_scp('RELAY08OFF')
+                CASE m.chOice=6
+                     = seNd_scp('RELAY08ON')
+                     = seNd_scp('RELAY07OFF')
+                     = swWait(2)
+                     = swCrttimer(1,(swSecond*m.reClstall))
+                     DO WHILE swGtimer(1)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          IF stAll(m.reBkstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                     = seNd_scp('RELAY08OFF')
+                     = seNd_scp('RELAY07OFF')
+                CASE m.chOice=7
+                     = seNd_scp('RELAY03ON')
+                     = seNd_scp('RELAY04OFF')
+                     = swWait(2)
+                     = swCrttimer(1,(swSecond*m.hoRistall))
+                     DO WHILE swGtimer(1)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          IF stAll(m.hoFwstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                     = seNd_scp('RELAY03OFF')
+                     = seNd_scp('RELAY04OFF')
+                CASE m.chOice=8
+                     = seNd_scp('RELAY04ON')
+                     = seNd_scp('RELAY03OFF')
+                     = swWait(2)
+                     = swCrttimer(1,(swSecond*m.hoRistall))
+                     DO WHILE swGtimer(1)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          IF stAll(m.hoBkstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                     = seNd_scp('RELAY04OFF')
+                     = seNd_scp('RELAY03OFF')
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-116'
+           = seNd_iso('D0')
+           = swWait(3)
+           m.stArttime = SECONDS()
+           DO CASE
+                CASE m.chOice=1
+                     = swCrttimer(1,(swSecond*m.frOnstall))
+                     DO WHILE swGtimer(1)>0
+                          = frOntmove(1)
+                          IF stAll(m.frUpstall)
+                               EXIT
+                          ENDIF
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                CASE m.chOice=2
+                     = swCrttimer(1,(swSecond*m.frOnstall))
+                     DO WHILE swGtimer(1)>0
+                          = frOntmove(2)
+                          IF stAll(m.frDnstall)
+                               EXIT
+                          ENDIF
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                CASE m.chOice=3
+                     = swCrttimer(1,(swSecond*m.baCkstall))
+                     DO WHILE swGtimer(1)>0
+                          = baCkmove(1)
+                          IF stAll(m.bkUpstall)
+                               EXIT
+                          ENDIF
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                CASE m.chOice=4
+                     = swCrttimer(1,(swSecond*m.baCkstall))
+                     DO WHILE swGtimer(1)>0
+                          = baCkmove(2)
+                          IF stAll(m.bkDnstall)
+                               EXIT
+                          ENDIF
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                CASE m.chOice=5
+                     = swCrttimer(1,(swSecond*m.reClstall))
+                     DO WHILE swGtimer(1)>0
+                          = reClmove(1)
+                          IF stAll(m.reFwstall)
+                               EXIT
+                          ENDIF
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                CASE m.chOice=6
+                     = swCrttimer(1,(swSecond*m.reClstall))
+                     DO WHILE swGtimer(1)>0
+                          = reClmove(2)
+                          IF stAll(m.reBkstall)
+                               EXIT
+                          ENDIF
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                CASE m.chOice=7
+                     = swCrttimer(1,(swSecond*m.hoRistall))
+                     DO WHILE swGtimer(1)>0
+                          = hoRizmove(1)
+                          IF stAll(m.hoFwstall)
+                               EXIT
+                          ENDIF
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+                CASE m.chOice=8
+                     = swCrttimer(1,(swSecond*m.hoRistall))
+                     DO WHILE swGtimer(1)>0
+                          = hoRizmove(2)
+                          IF stAll(m.hoBkstall)
+                               EXIT
+                          ENDIF
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = swDsytimer(1)
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-74'
+           m.stArttime = SECONDS()
+           DO CASE
+                CASE m.chOice=1
+                     = swCrttimer(1,(swSecond*m.frOnstall))
+                     = swCrttimer(2,24)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = frOntmove(1)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = frOntmove(1)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=2
+                     = swCrttimer(1,(swSecond*m.frOnstall))
+                     = swCrttimer(2,24)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = frOntmove(2)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = frOntmove(2)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=3
+                     = swCrttimer(1,(swSecond*m.baCkstall))
+                     = swCrttimer(2,24)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = baCkmove(1)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = baCkmove(1)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=4
+                     = swCrttimer(1,(swSecond*m.baCkstall))
+                     = swCrttimer(2,24)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = baCkmove(2)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = baCkmove(2)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=5
+                     = swCrttimer(1,(swSecond*m.reClstall))
+                     = swCrttimer(2,72)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = reClmove(1)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = reClmove(1)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=6
+                     = swCrttimer(1,(swSecond*m.reClstall))
+                     = swCrttimer(2,72)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = reClmove(2)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = reClmove(2)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=7
+                     = swCrttimer(1,(swSecond*m.hoRistall))
+                     = swCrttimer(2,72)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = hoRizmove(1)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = hoRizmove(1)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=8
+                     = swCrttimer(1,(swSecond*m.hoRistall))
+                     = swCrttimer(2,72)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = hoRizmove(2)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = hoRizmove(2)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+           ENDCASE
+      CASE UPPER(ALLTRIM(m.moDuletype))='FN-145'
+           m.stArttime = SECONDS()
+           DO CASE
+                CASE m.chOice=1
+                     = swCrttimer(1,(swSecond*m.frOnstall))
+                     = swCrttimer(2,24)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = frOntmove(1)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = frOntmove(1)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=2
+                     = swCrttimer(1,(swSecond*m.frOnstall))
+                     = swCrttimer(2,24)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = frOntmove(2)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = frOntmove(2)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=3
+                     = swCrttimer(1,(swSecond*m.baCkstall))
+                     = swCrttimer(2,24)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = baCkmove(1)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = baCkmove(1)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=4
+                     = swCrttimer(1,(swSecond*m.baCkstall))
+                     = swCrttimer(2,24)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = baCkmove(2)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = baCkmove(2)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=5
+                     = swCrttimer(1,(swSecond*m.reClstall))
+                     = swCrttimer(2,72)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = reClmove(1)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = reClmove(1)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=6
+                     = swCrttimer(1,(swSecond*m.reClstall))
+                     = swCrttimer(2,72)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = reClmove(2)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = reClmove(2)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=7
+                     = swCrttimer(1,(swSecond*m.hoRistall))
+                     = swCrttimer(2,72)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = hoRizmove(1)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = hoRizmove(1)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+                CASE m.chOice=8
+                     = swCrttimer(1,(swSecond*m.hoRistall))
+                     = swCrttimer(2,72)
+                     DO WHILE swGtimer(2)>0
+                          IF baIlout()
+                               EXIT
+                          ENDIF
+                          = hoRizmove(2)
+                     ENDDO
+                     = swDsytimer(2)
+                     IF  .NOT. m.baIlout
+                          DO WHILE swGtimer(1)>0
+                               = hoRizmove(2)
+                               IF stAll1()
+                                    EXIT
+                               ENDIF
+                          ENDDO
+                     ENDIF
+                     = swDsytimer(1)
+           ENDCASE
+ ENDCASE
+ m.stOptime = SECONDS()
+ IF m.stOptime>=m.stArttime
+      RETURN (stOptime-m.stArttime)
+ ELSE
+      RETURN (86400-stArttime+m.stOptime)
+ ENDIF
+ RETURN 0
+*
+FUNCTION stAll
+ PARAMETER liMit
+ PRIVATE reAding1, reAding2, reAding3, reAding4, vaLue
+ m.reAding1 = 0
+ m.reAding2 = 0
+ m.reAding3 = 0
+ m.reAding4 = 0
+ m.vaLue = 0
+ = geT_scp(0)
+ IF seNd_scp('AD01IN')
+      IF geTscp()=0
+           IF m.r_Byte1=161
+                m.reAding1 = m.r_Byte3-128
+                m.reAding2 = m.r_Byte4-128
+                m.reAding3 = m.r_Byte5-128
+                m.reAding4 = m.r_Byte6-128
+           ELSE
+                IF m.viEwit
+                     ACTIVATE WINDOW viEwwin
+                     ? 'Message not an A/D response.'
+                ENDIF
+                RETURN .F.
+           ENDIF
+      ELSE
+           IF m.viEwit
+                ACTIVATE WINDOW viEwwin
+                ? 'A single message is not pending.'
+           ENDIF
+           RETURN .F.
+      ENDIF
+ ELSE
+      IF m.viEwit
+           ACTIVATE WINDOW viEwwin
+           ? 'Error sending message.'
+      ENDIF
+      RETURN .F.
+ ENDIF
+ m.vaLue = ((m.reAding1+m.reAding2+m.reAding3+reAding4)/4)*atOdfactor
+ IF m.viEwit
+      ACTIVATE WINDOW viEwwin
+      ? PADL(STR(m.reAding1*atOdfactor, 4, 2), 4), PADL(STR(m.reAding2* ;
+        atOdfactor, 4, 2), 4), PADL(STR(m.reAding3*atOdfactor, 4, 2), 4),  ;
+        PADL(STR(m.reAding4*atOdfactor, 4, 2), 4), 'ÄÄ',  ;
+        ALLTRIM(STR(m.vaLue, 4, 2))
+ ENDIF
+ IF (m.vaLue>=m.liMit)
+      RETURN .T.
+ ENDIF
+ RETURN .F.
+*
+FUNCTION stAll1
+ = seNdscp('64','a2',3,'22A50000000000')
+ IF baIlout()
+      RETURN .T.
+ ENDIF
+ DO WHILE geTscp()<>-130
+      IF m.viEwit
+           ACTIVATE WINDOW viEwwin
+           ? STR(m.r_Byte1, 3, 0)+'.'+STR(m.r_Byte2, 3, 0)+'.'+ ;
+             STR(m.r_Byte3, 3, 0)+'.'+STR(m.r_Byte4, 3, 0)
+      ENDIF
+      IF (m.r_Byte2=165) .AND. (m.r_Byte3=0)
+           IF (m.r_Byte4>0)
+                RETURN .F.
+           ELSE
+                DO WHILE geTscp()=-129
+                ENDDO
+                RETURN .T.
+           ENDIF
+      ELSE
+           RETURN .F.
+      ENDIF
+ ENDDO
+ RETURN .F.
+*
+PROCEDURE moVestep
+ PARAMETER chOice, tiMes
+ PRIVATE l
+ = seNd_iso('D0')
+ = swWait(3)
+ FOR m.l = 1 TO m.tiMes
+      = swCrttimer(1,(swSecond*m.stEptime))
+      DO CASE
+           CASE m.chOice=1
+                = frOntmove(1)
+                DO WHILE swGtimer(1)>0
+                     IF reAd_atod1()<=0
+                          EXIT
+                     ENDIF
+                     = swWait(1)
+                ENDDO
+           CASE m.chOice=2
+                = frOntmove(2)
+                DO WHILE swGtimer(1)>0
+                     IF reAd_atod1()<=0
+                          EXIT
+                     ENDIF
+                     = swWait(1)
+                ENDDO
+           CASE m.chOice=3
+                = baCkmove(1)
+                DO WHILE swGtimer(1)>0
+                     IF reAd_atod1()<=0
+                          EXIT
+                     ENDIF
+                     = swWait(1)
+                ENDDO
+           CASE m.chOice=4
+                = baCkmove(2)
+                DO WHILE swGtimer(1)>0
+                     IF reAd_atod1()<=0
+                          EXIT
+                     ENDIF
+                     = swWait(1)
+                ENDDO
+           CASE m.chOice=5
+                = reClmove(1)
+                DO WHILE swGtimer(1)>0
+                     IF reAd_atod1()<=0
+                          EXIT
+                     ENDIF
+                     = swWait(1)
+                ENDDO
+           CASE m.chOice=6
+                = reClmove(2)
+                DO WHILE swGtimer(1)>0
+                     IF reAd_atod1()<=0
+                          EXIT
+                     ENDIF
+                     = swWait(1)
+                ENDDO
+           CASE m.chOice=7
+                = hoRizmove(1)
+                DO WHILE swGtimer(1)>0
+                     IF reAd_atod1()<=0
+                          EXIT
+                     ENDIF
+                     = swWait(1)
+                ENDDO
+           CASE m.chOice=8
+                = hoRizmove(2)
+                DO WHILE swGtimer(1)>0
+                     IF reAd_atod1()<=0
+                          EXIT
+                     ENDIF
+                     = swWait(1)
+                ENDDO
+      ENDCASE
+      = swDsytimer(1)
+      IF baIlout()
+           EXIT
+      ENDIF
+ ENDFOR
+ RETURN
+*
+PROCEDURE moVetime
+ PARAMETER chOice, tiMespan
+ PRIVATE ouT, l
+ IF m.tiMespan<=0.0
+      RETURN
+ ENDIF
+ = swWait(72)
+ = swCrttimer(1,(swSecond*m.tiMespan))
+ DO CASE
+      CASE (UPPER(ALLTRIM(m.moDuletype))='FN-74' .OR.  ;
+           UPPER(ALLTRIM(m.moDuletype))='FN-145') .AND. m.cfGdvrside=1
+           DO CASE
+                CASE m.chOice=1
+                     DO WHILE swGtimer(1)>0
+                          = frOntmove(1)
+                     ENDDO
+                CASE m.chOice=2
+                     DO WHILE swGtimer(1)>0
+                          = frOntmove(2)
+                     ENDDO
+                CASE m.chOice=3
+                     DO WHILE swGtimer(1)>0
+                          = baCkmove(1)
+                     ENDDO
+                CASE m.chOice=4
+                     DO WHILE swGtimer(1)>0
+                          = baCkmove(2)
+                     ENDDO
+                CASE m.chOice=5
+                     DO WHILE swGtimer(1)>0
+                          = reClmove(1)
+                     ENDDO
+                CASE m.chOice=6
+                     DO WHILE swGtimer(1)>0
+                          = reClmove(2)
+                     ENDDO
+                CASE m.chOice=7
+                     DO WHILE swGtimer(1)>0
+                          = hoRizmove(1)
+                     ENDDO
+                CASE m.chOice=8
+                     DO WHILE swGtimer(1)>0
+                          = hoRizmove(2)
+                     ENDDO
+           ENDCASE
+      OTHERWISE
+           DO CASE
+                CASE m.chOice=1
+                     = seNd_scp('RELAY01OFF')
+                     = seNd_scp('RELAY02ON')
+                     = swWait(2)
+                     DO WHILE swGtimer(1)>0
+                          IF stAll(m.frUpstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = seNd_scp('RELAY01OFF')
+                     = seNd_scp('RELAY02OFF')
+                CASE m.chOice=2
+                     = seNd_scp('RELAY01ON')
+                     = seNd_scp('RELAY02OFF')
+                     = swWait(2)
+                     DO WHILE swGtimer(1)>0
+                          IF stAll(m.frDnstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = seNd_scp('RELAY01OFF')
+                     = seNd_scp('RELAY02OFF')
+                CASE m.chOice=3
+                     = seNd_scp('RELAY05ON')
+                     = seNd_scp('RELAY06OFF')
+                     = swWait(2)
+                     DO WHILE swGtimer(1)>0
+                          IF stAll(m.bkUpstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = seNd_scp('RELAY05OFF')
+                     = seNd_scp('RELAY06OFF')
+                CASE m.chOice=4
+                     = seNd_scp('RELAY06ON')
+                     = seNd_scp('RELAY05OFF')
+                     = swWait(2)
+                     DO WHILE swGtimer(1)>0
+                          IF stAll(m.bkDnstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = seNd_scp('RELAY06OFF')
+                     = seNd_scp('RELAY05OFF')
+                CASE m.chOice=5
+                     = seNd_scp('RELAY07ON')
+                     = seNd_scp('RELAY08OFF')
+                     = swWait(2)
+                     DO WHILE swGtimer(1)>0
+                          IF stAll(m.reFwstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = seNd_scp('RELAY07OFF')
+                     = seNd_scp('RELAY08OFF')
+                CASE m.chOice=6
+                     = seNd_scp('RELAY08ON')
+                     = seNd_scp('RELAY07OFF')
+                     = swWait(2)
+                     DO WHILE swGtimer(1)>0
+                          IF stAll(m.reBkstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = seNd_scp('RELAY08OFF')
+                     = seNd_scp('RELAY07OFF')
+                CASE m.chOice=7
+                     = seNd_scp('RELAY03ON')
+                     = seNd_scp('RELAY04OFF')
+                     = swWait(2)
+                     DO WHILE swGtimer(1)>0
+                          IF stAll(m.hoFwstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = seNd_scp('RELAY03OFF')
+                     = seNd_scp('RELAY04OFF')
+                CASE m.chOice=8
+                     = seNd_scp('RELAY04ON')
+                     = seNd_scp('RELAY03OFF')
+                     = swWait(2)
+                     DO WHILE swGtimer(1)>0
+                          IF stAll(m.hoBkstall)
+                               EXIT
+                          ENDIF
+                     ENDDO
+                     = seNd_scp('RELAY04OFF')
+                     = seNd_scp('RELAY03OFF')
+           ENDCASE
+ ENDCASE
+ = swDsytimer(1)
+ RETURN
+*
+PROCEDURE adD_err
+ PARAMETER erRorcode
+ IF SEEK(m.erRorcode, 'DTC_FILE') .AND.  .NOT. SEEK(m.erRorcode, 'errorlist')
+      reSp_lvl( dtC_file.teSt_level, 1) = .F.
+      INSERT INTO errorlist (erRcode, erRdesc) VALUE (erRorcode,  ;
+             dtC_file.dtC_desc)
+ ELSE
+      IF  .NOT. SEEK(m.erRorcode, 'errorlist')
+           reSp_lvl( 8, 1) = .F.
+           INSERT INTO errorlist (erRcode) VALUE (erRorcode)
+      ENDIF
+ ENDIF
+ RETURN
+*
+PROCEDURE laBelit
+ PARAMETER chOice
+ PRIVATE stArt, mcOunt, erRstring
+ m.xsTart = '810'
+ = swTxbuffer(coM2,CHR(2)+'R'+CHR(3))
+ = swTxbuffer(coM2,CHR(2)+CHR(27)+'C'+CHR(3))
+ = swTxbuffer(coM2,CHR(2)+CHR(27)+'P'+CHR(3))
+ DO CASE
+      CASE m.cfGlabelsi=1
+           = swTxbuffer(coM2,CHR(2)+'E3;F3;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H0;o12,'+m.xsTart+ ;
+             ';f1;c20;d0,20;h2;w2;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H1;o57,'+m.xsTart+ ;
+             ';f1;c20;d0,14;h2;w2;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'L2;o112,'+m.xsTart+';f1;l770;h1;w2;'+ ;
+             CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H3;o107,'+m.xsTart+ ;
+             ';f1;c20;d0,18;h2;w1;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H4;o152,'+m.xsTart+ ;
+             ';f1;c20;d0,40;h2;w1;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'L5;o207,'+m.xsTart+';f1;l770;h1;w2;'+ ;
+             CHR(3))
+           IF m.chOice=1
+                = swTxbuffer(coM2,CHR(2)+'H6;o207,'+m.xsTart+ ;
+                  ';f1;c20;d3, PASSED ;h2;w2;'+CHR(3))
+           ELSE
+                = swTxbuffer(coM2,CHR(2)+'H6;o207,'+m.xsTart+ ;
+                  ';f1;c20;b2;d3, FAILED ;h2;w2;'+CHR(3))
+           ENDIF
+           = swTxbuffer(coM2,CHR(2)+'L7;o267,'+m.xsTart+';f1;l770;h1;w2;'+ ;
+             CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H8;o267,'+m.xsTart+ ;
+             ';f1;c20;d0,60;h1;w1;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H9;o287,'+m.xsTart+ ;
+             ';f1;c20;d0,60;h1;w1;'+CHR(3))
+      CASE m.cfGlabelsi=2
+           = swTxbuffer(coM2,CHR(2)+'E3;F3;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H0;o1,'+m.xsTart+ ;
+             ';f1;c20;d0,20;h2;w2;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H1;o46,'+m.xsTart+ ;
+             ';f1;c20;d0,14;h2;w2;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'L2;o101,'+m.xsTart+';f1;l770;h1;w2;'+ ;
+             CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H3;o96,'+m.xsTart+ ;
+             ';f1;c20;d0,18;h2;w1;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H4;o141,'+m.xsTart+ ;
+             ';f1;c20;d0,40;h2;w1;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'L5;o196,'+m.xsTart+';f1;l770;h1;w2;'+ ;
+             CHR(3))
+           IF m.chOice=1
+                = swTxbuffer(coM2,CHR(2)+'H6;o196,'+m.xsTart+ ;
+                  ';f1;c20;d3, PASSED ;h2;w2;'+CHR(3))
+           ELSE
+                = swTxbuffer(coM2,CHR(2)+'H6;o196,'+m.xsTart+ ;
+                  ';f1;c20;b2;d3, FAILED ;h2;w2;'+CHR(3))
+           ENDIF
+           = swTxbuffer(coM2,CHR(2)+'L7;o256,'+m.xsTart+';f1;l770;h1;w2;'+ ;
+             CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H8;o196,586;f1;c20;d0,60;h1;w1;'+CHR(3))
+           = swTxbuffer(coM2,CHR(2)+'H9;o216,586;f1;c20;d0,60;h1;w1;'+CHR(3))
+ ENDCASE
+ = swTxbuffer(coM2,CHR(2)+'R'+CHR(3))
+ = swTxbuffer(coM2,CHR(2))
+ = swTxbuffer(coM2,CHR(27))
+ = swTxbuffer(coM2,'E3')
+ = swTxbuffer(coM2,CHR(24))
+ = swTxbuffer(coM2,m.paRtnum+CHR(13))
+ IF m.cfGdvrside=1
+      = swTxbuffer(coM2,'DRIVER SEAT'+CHR(13))
+ ELSE
+      = swTxbuffer(coM2,'PASSENGER SEAT'+CHR(13))
+ ENDIF
+ = swTxbuffer(coM2,DTOC(DATE())+'  '+TIME()+CHR(13))
+ IF ((SECONDS()/3600)>6) .AND. ((SECONDS()/3600)<16)
+      = swTxbuffer(coM2,'Cell:'+m.cfGcell+'  Shift:02  Tester:'+m.cfGid+ ;
+        CHR(13))
+ ELSE
+      = swTxbuffer(coM2,'Cell:'+m.cfGcell+'  Shift:03  Tester:'+m.cfGid+ ;
+        CHR(13))
+ ENDIF
+ SELECT erRorlist
+ COUNT ALL TO m.mcOunt
+ IF m.mcOunt>0
+      GOTO TOP
+      m.erRstring = ''
+      DO CASE
+           CASE m.cfGlabelsi=1
+                SCAN NEXT 12
+                     m.erRstring = m.erRstring+erRorlist.erRcode+','
+                ENDSCAN
+           CASE m.cfGlabelsi=2
+                SCAN NEXT 8
+                     m.erRstring = m.erRstring+erRorlist.erRcode+','
+                ENDSCAN
+      ENDCASE
+      = swTxbuffer(coM2,m.erRstring+CHR(13))
+      IF  .NOT. EOF()
+           m.erRstring = ''
+           DO CASE
+                CASE m.cfGlabelsi=1
+                     SCAN NEXT 12
+                          m.erRstring = m.erRstring+erRorlist.erRcode+','
+                     ENDSCAN
+                CASE m.cfGlabelsi=2
+                     SCAN NEXT 8
+                          m.erRstring = m.erRstring+erRorlist.erRcode+','
+                     ENDSCAN
+           ENDCASE
+           = swTxbuffer(coM2,m.erRstring+CHR(13))
+      ELSE
+           = swTxbuffer(coM2,''+CHR(13))
+      ENDIF
+ ELSE
+      = swTxbuffer(coM2,''+CHR(13))
+      = swTxbuffer(coM2,''+CHR(13))
+ ENDIF
+ = swTxbuffer(coM2,CHR(3))
+ = swTxbuffer(coM2,CHR(2))
+ = swTxbuffer(coM2,CHR(30))
+ = swTxbuffer(coM2,'0')
+ = swTxbuffer(coM2,'0')
+ = swTxbuffer(coM2,'0')
+ = swTxbuffer(coM2,'1')
+ = swTxbuffer(coM2,CHR(31))
+ = swTxbuffer(coM2,'0')
+ = swTxbuffer(coM2,'1')
+ = swTxbuffer(coM2,CHR(23))
+ = swTxbuffer(coM2,CHR(3))
+ RETURN
+*
+FUNCTION laBelstat
+ PRIVATE stAt, stAtresult
+ = swTxbuffer(coM2,CHR(5))
+ m.stAt = ASC(chK_port(coM2))
+ DO CASE
+      CASE m.stAt=29
+           WAIT WINDOW NOWAIT 'Label Printer Error !'+CHR(13)+ ;
+                'Buffer already full'
+           m.stAtresult = .F.
+      CASE m.stAt=14
+           WAIT WINDOW NOWAIT 'Label Printer Error !'+CHR(13)+ ;
+                'Printhead test failed'
+           m.stAtresult = .F.
+      CASE m.stAt=31
+           WAIT WINDOW NOWAIT 'Label Printer Error !'+CHR(13)+'Paper Path open'
+           m.stAtresult = .F.
+      CASE m.stAt=31
+           WAIT WINDOW NOWAIT 'Label Printer Error !'+CHR(13)+'Ribbon Fault'
+           m.stAtresult = .F.
+      CASE m.stAt=25
+           WAIT WINDOW NOWAIT 'Label Printer Error !'+CHR(13)+'No Label Stock'
+           m.stAtresult = .F.
+      CASE m.stAt=19
+           WAIT WINDOW NOWAIT 'Label Printer Error !'+CHR(13)+'Buffer Now Full'
+           m.stAtresult = .F.
+      CASE m.stAt=8
+           WAIT WINDOW NOWAIT 'Label Printer Error !'+CHR(13)+ ;
+                'Takeup Reel Full'
+           m.stAtresult = .F.
+      CASE m.stAt=28
+           WAIT WINDOW NOWAIT 'Label Printer Error !'+CHR(13)+ ;
+                'Label at Strip Pin'
+           m.stAtresult = .F.
+      CASE m.stAt=17
+           m.stAtresult = .T.
+      OTHERWISE
+           WAIT WINDOW NOWAIT 'Label Printer Error !'+CHR(13)+'Unknown'
+           = swTxbuffer(coM2,CHR(16))
+           m.stAtresult = .T.
+ ENDCASE
+ RETURN m.stAtresult
+*
+PROCEDURE prIntit
+ PARAMETER chOice
+ PRIVATE stArt, mcOunt, erRstring
+ ??? m.paRtnum+CHR(10)+CHR(13)
+ IF m.cfGdvrside=1
+      ??? 'DRIVER SEAT'+CHR(10)+CHR(13)
+ ELSE
+      ??? 'PASSENGER SEAT'+CHR(10)+CHR(13)
+ ENDIF
+ ??? DTOC(DATE())+'  '+TIME()+CHR(10)+CHR(13)
+ IF ((SECONDS()/3600)>6) .AND. ((SECONDS()/3600)<16)
+      ??? 'Cell:'+m.cfGcell+'  Shift:02  Tester:'+m.cfGid+CHR(10)+CHR(13)
+ ELSE
+      ??? 'Cell:'+m.cfGcell+'  Shift:03  Tester:'+m.cfGid+CHR(10)+CHR(13)
+ ENDIF
+ ??? '___________________________________'+CHR(10)+CHR(13)
+ IF m.chOice=1
+      ??? 'PASSED'+CHR(10)+CHR(13)
+ ELSE
+      ??? 'FAILED  '
+ ENDIF
+ SELECT erRorlist
+ COUNT ALL TO m.mcOunt
+ IF m.mcOunt>0
+      GOTO TOP
+      m.erRstring = ''
+      SCAN NEXT 12
+           m.erRstring = m.erRstring+erRorlist.erRcode+','
+      ENDSCAN
+      ??? m.erRstring+CHR(10)+CHR(13)
+      IF  .NOT. EOF()
+           m.erRstring = ''
+           SCAN NEXT 12
+                m.erRstring = m.erRstring+erRorlist.erRcode+','
+           ENDSCAN
+           ??? m.erRstring+CHR(10)+CHR(13)
+      ENDIF
+ ENDIF
+ ??? '___________________________________'+CHR(10)+CHR(13)
+ liNecount = 0
+ FOR liNecount = 1 TO 2
+      ??? CHR(10)
+ ENDFOR
+ RETURN
+*
+FUNCTION reAd_atod1
+ PRIVATE vaLue, reAding1, reAding2, reAding3, reAding4
+ m.reAding1 = 0
+ m.reAding2 = 0
+ m.reAding3 = 0
+ m.reAding4 = 0
+ m.vaLue = 0
+ = geT_scp(0)
+ IF seNd_scp('AD01IN')
+      IF geTscp()=0
+           IF m.r_Byte1=161
+                m.reAding1 = m.r_Byte3-128
+                m.reAding2 = m.r_Byte4-128
+                m.reAding3 = m.r_Byte5-128
+                m.reAding4 = m.r_Byte6-128
+           ELSE
+                IF m.viEwit
+                     ACTIVATE WINDOW viEwwin
+                     ? 'Message not an A/D response.'
+                ENDIF
+                RETURN -1
+           ENDIF
+      ELSE
+           IF m.viEwit
+                ACTIVATE WINDOW viEwwin
+                ? 'A single message is not pending.'
+           ENDIF
+           RETURN -1
+      ENDIF
+ ELSE
+      IF m.viEwit
+           ACTIVATE WINDOW viEwwin
+           ? 'Error sending message.'
+      ENDIF
+      RETURN -1
+ ENDIF
+ m.vaLue = (m.reAding1+m.reAding2+m.reAding3+reAding4)/4
+ IF m.viEwit
+      ACTIVATE WINDOW viEwwin
+      ? PADL(STR(m.reAding1*atOdfactor, 4, 2), 4), PADL(STR(m.reAding2* ;
+        atOdfactor, 4, 2), 4), PADL(STR(m.reAding3*atOdfactor, 4, 2), 4),  ;
+        PADL(STR(m.reAding4*atOdfactor, 4, 2), 4), 'ÄÄ',  ;
+        ALLTRIM(STR(m.vaLue*atOdfactor, 4, 2))
+ ENDIF
+ RETURN m.vaLue*atOdfactor
+*
+PROCEDURE viEwtog
+ IF m.viEwit
+      WAIT WINDOW TIMEOUT 0.5 'Viewer Disabled.'
+      m.viEwit = .F.
+      DEACTIVATE WINDOW viEwwin
+ ELSE
+      WAIT WINDOW TIMEOUT 0.5 'Viewer Enabled.'
+      m.viEwit = .T.
+ ENDIF
+ RETURN
+*
+PROCEDURE laRgetog
+ IF m.laRge
+      WAIT WINDOW TIMEOUT 0.5 'Large Prompts Disabled.'
+      m.laRge = .F.
+ ELSE
+      WAIT WINDOW TIMEOUT 0.5 'Large Prompts Enabled.'
+      m.laRge = .T.
+ ENDIF
+ RETURN
+*
+PROCEDURE viEwhistry
+ PUSH KEY CLEAR
+ DEFINE WINDOW brOwwin FROM 1, 0 TO 24, 79 TITLE 'Datalog Database' COLOR  ;
+        SCHEME 10
+ ACTIVATE WINDOW brOwwin
+ SELECT 0
+ USE NOUPDATE (cdAtalog) ALIAS daTalog
+ BROWSE NOEDIT IN brOwwin
+ USE IN daTalog
+ RELEASE WINDOW brOwwin
+ POP KEY
+ RETURN
+*
+PROCEDURE viEwcodes
+ PRIVATE m.cuRrarea
+ PUSH KEY CLEAR
+ m.cuRrarea = SELECT(0)
+ DEFINE WINDOW brOwwin FROM 1, 0 TO 24, 79 TITLE 'Error Codes' COLOR SCHEME 10
+ ACTIVATE WINDOW brOwwin
+ SELECT dtC_file
+ BROWSE FIELDS dtC :H = 'Code', dtC_desc :H = 'Description' NOEDIT IN brOwwin
+ RELEASE WINDOW brOwwin
+ SELECT (cuRrarea)
+ POP KEY
+ RETURN
+*
+PROCEDURE viEwerrors
+ PRIVATE m.cuRrarea
+ PUSH KEY CLEAR
+ m.cuRrarea = SELECT(0)
+ DEFINE WINDOW brOwwin FROM 1, 0 TO 24, 79 TITLE 'Test Errors' COLOR SCHEME 10
+ ACTIVATE WINDOW brOwwin
+ SELECT erRorlist
+ BROWSE FIELDS erRcode :H = 'Code', erRdesc :H = 'Description' NOEDIT IN  ;
+        brOwwin
+ RELEASE WINDOW brOwwin
+ SELECT (cuRrarea)
+ POP KEY
+ RETURN
+*
+PROCEDURE laRge_prom
+ PARAMETER teXttoshow, bkGnd
+ PRIVATE atTr, nrOw
+ IF TYPE('bkgnd')='U'
+      m.bkGnd = 0
+ ENDIF
+ SHOW WINDOW coVerwin
+ IF m.laRge
+      = swSetvideo(1)
+      = swSetfont(2)
+ ENDIF
+ IF m.bkGnd=0
+      m.atTr = swBldatrib(swBitor(swWhite,swIntense),swBlack)
+ ELSE
+      m.atTr = swBldatrib(swBitor(swBlack,swBlink),swWhite)
+      FOR nrOw = 0 TO 24
+           = swScurpos(nrOw,0)
+           = swErsendln(m.atTr,39)
+      ENDFOR
+ ENDIF
+ = swRingbell()
+ = swPutstr(5,20-LEN(teXttoshow)/2,teXttoshow,m.atTr)
+ = swScurpos(23,39)
+ RETURN
+*
+PROCEDURE clEarpromp
+ = swSetvideo(m.cuRrvidmod)
+ HIDE WINDOW coVerwin
+ RETURN
+*
+FUNCTION in_prompt
+ PARAMETER teXttoshow
+ PRIVATE atTr, reSp
+ m.reSp = 0
+ SHOW WINDOW coVerwin
+ m.atTr = swBldatrib(swBitor(swWhite,swIntense),swBlack)
+ IF m.laRge
+      = swSetvideo(1)
+      = swSetfont(2)
+ ENDIF
+ = swRingbell()
+ = swPutstr(5,20-LEN(teXttoshow)/2,teXttoshow,m.atTr)
+ = swPutstr(6,18,'(Y/N)',m.atTr)
+ = swScurpos(24,40)
+ DO WHILE (UPPER(CHR(m.reSp))<>'Y' .AND. UPPER(CHR(m.reSp))<>'N')
+      m.reSp = INKEY(0)
+ ENDDO
+ = INKEY(1)
+ IF m.laRge
+      = swSetvideo(m.cuRrvidmod)
+ ENDIF
+ HIDE WINDOW coVerwin
+ IF UPPER(CHR(m.reSp))='Y'
+      RETURN .T.
+ ENDIF
+ RETURN .F.
+*
+FUNCTION tiMeprompt
+ PARAMETER teXttoshow, txT1, txT2, txT3, txT4, waIttime
+ PRIVATE atTr, reSp
+ m.reSp = 0
+ SHOW WINDOW coVerwin
+ m.atTr = swBldatrib(swBitor(swWhite,swIntense),swBlack)
+ IF m.laRge
+      = swSetvideo(1)
+      = swSetfont(2)
+ ENDIF
+ = swRingbell()
+ = swPutstr(3,20-LEN(teXttoshow)/2,teXttoshow,m.atTr)
+ = swPutstr(4,1,txT1,m.atTr)
+ = swPutstr(5,1,txT2,m.atTr)
+ = swPutstr(6,1,txT3,m.atTr)
+ = swPutstr(7,1,txT4,m.atTr)
+ = swPutstr(10,10,'PRESS Y WHEN DONE.',m.atTr)
+ = swScurpos(24,40)
+ = swCrttimer(12,swSecond*waIttime)
+ DO WHILE (UPPER(CHR(m.reSp))<>'Y' .AND. swGtimer(12)>0)
+      m.reSp = INKEY(1)
+ ENDDO
+ = INKEY(1)
+ IF m.laRge
+      = swSetvideo(m.cuRrvidmod)
+ ENDIF
+ HIDE WINDOW coVerwin
+ IF UPPER(CHR(m.reSp))='Y'
+      RETURN .T.
+ ENDIF
+ RETURN .F.
+*
+PROCEDURE prInt_rot
+ PUSH KEY CLEAR
+ IF  .NOT. PRINTSTATUS()
+      WAIT WINDOW 'The printer is Off Line !'+CHR(13)+ ;
+           'Place the printer back On Line.'+CHR(13)+ ;
+           'Press any key to continue printing...'
+ ENDIF
+ IF PRINTSTATUS()
+      WAIT WINDOW NOWAIT 'Printing...'
+      ??? '     '+MDY(DATE())+'  '+TIME()+CHR(13)+CHR(10)
+      ??? '     Part Number: '+ALLTRIM(m.paRtnum)+' - '+IIF(m.cfGdvrside= ;
+          1, 'DRIVER SIDE', 'PASSENGER SIDE')+CHR(13)+CHR(10)
+      ??? '     Description: '+ALLTRIM(m.paRtdesc)+CHR(13)+CHR(10)
+      ??? CHR(13)+CHR(10)
+      ??? '        Motor/Direction   Average Speed   Travel Length   Travel Time'+ ;
+          CHR(13)+CHR(10)
+      ??? '        -------------------------------------------------------------'+ ;
+          CHR(13)+CHR(10)
+      ??? '        Horizontal Fwd.:   '+STR(m.roT_hf, 6, 3)+' mm/sec    '+ ;
+          STR(m.h_Travel, 5, 1)+' mm      '+STR(m.tiMe_hf, 6, 3)+' sec.'+ ;
+          CHR(13)+CHR(10)
+      ??? '        Horizontal Rev.:   '+STR(m.roT_hr, 6, 3)+' mm/sec    '+ ;
+          STR(m.h_Travel, 5, 1)+' mm      '+STR(m.tiMe_hr, 6, 3)+' sec.'+ ;
+          CHR(13)+CHR(10)
+      ??? '        Front Tilt Up  :   '+STR(m.roT_fu, 6, 3)+' mm/sec    '+ ;
+          STR(m.f_Travel, 5, 1)+' mm      '+STR(m.tiMe_fu, 6, 3)+' sec.'+ ;
+          CHR(13)+CHR(10)
+      ??? '        Front Tilt Down:   '+STR(m.roT_fd, 6, 3)+' mm/sec    '+ ;
+          STR(m.f_Travel, 5, 1)+' mm      '+STR(m.tiMe_fd, 6, 3)+' sec.'+ ;
+          CHR(13)+CHR(10)
+      ??? '        Rear Tilt Up   :   '+STR(m.roT_bu, 6, 3)+' mm/sec    '+ ;
+          STR(m.b_Travel, 5, 1)+' mm      '+STR(m.tiMe_bu, 6, 3)+' sec.'+ ;
+          CHR(13)+CHR(10)
+      ??? '        Rear Tilt Down :   '+STR(m.roT_bd, 6, 3)+' mm/sec    '+ ;
+          STR(m.b_Travel, 5, 1)+' mm      '+STR(m.tiMe_bd, 6, 3)+' sec.'+ ;
+          CHR(13)+CHR(10)
+      ??? '        Recliner Fwd.  :   '+STR(m.roT_rf, 6, 3)+' deg/sec   '+ ;
+          STR(m.r_Travel, 5, 0)+' deg     '+STR(m.tiMe_rf, 6, 3)+' sec.'+ ;
+          CHR(13)+CHR(10)
+      ??? '        Recliner Rev.  :   '+STR(m.roT_rr, 6, 3)+' deg/sec   '+ ;
+          STR(m.r_Travel, 5, 0)+' deg     '+STR(m.tiMe_rr, 6, 3)+' sec.'+ ;
+          CHR(13)+CHR(10)
+      ??? CHR(12)
+      WAIT CLEAR
+ ENDIF
+ POP KEY
+ RETURN
+*
+PROCEDURE baCkupdata
+ PRIVATE m.baCkname
+ PUSH KEY CLEAR
+ WAIT WINDOW NOWAIT 'Backing up Datalog database...'
+ SET DATE TO ANSI
+ m.baCkname = STRTRAN(DTOC(DATE()), '.', '')
+ SELECT 0
+ USE EXCLUSIVE (cdAtalog) ALIAS daTalog
+ IF FILE(m.baCkname+'.dbf')
+      SELECT 0
+      USE (baCkname)
+      APPEND FROM (cdAtalog)
+      USE
+ ELSE
+      COPY TO (baCkname) STRUCTURE
+      SELECT 0
+      USE (baCkname)
+      APPEND FROM (cdAtalog)
+      USE
+ ENDIF
+ SELECT daTalog
+ ZAP
+ USE
+ SET DATE TO AMERICAN
+ WAIT CLEAR
+ POP KEY
+ RETURN
+*
+FUNCTION geT_scp
+ PARAMETER nuMbytes, b1, b2, b3, b4, b5, b6, b7
+ PRIVATE reSult, nrEtb
+ m.reSult = .T.
+ = swCrttimer(8,36)
+ m.nrEtb = geTscp()
+ DO WHILE ((swGtimer(8)>0) .AND. (m.nrEtb<>-130))
+      DO CASE
+           CASE m.nuMbytes=7
+                IF (m.r_Byte1=m.b1) .AND. (m.r_Byte2=m.b2) .AND.  ;
+                   (m.r_Byte3=m.b3) .AND. (m.r_Byte4=m.b4) .AND.  ;
+                   (m.r_Byte5=m.b5) .AND. (m.r_Byte6=m.b6) .AND.  ;
+                   (m.r_Byte7=m.b7)
+                     EXIT
+                ELSE
+                     IF m.r_Byte1=128 .AND. m.r_Byte2=182 .AND.  ;
+                        (m.r_Byte3=3 .OR. m.r_Byte3=1) .AND. m.r_Byte4=0  ;
+                        .AND. m.r_Byte5=2 .AND. m.r_Byte6=0
+                          WAIT WINDOW NOWAIT 'Driver Seat Occupied Detected !'
+                     ELSE
+                          WAIT WINDOW NOWAIT 'Something ELSE Detected !'
+                          m.reSult = .F.
+                     ENDIF
+                ENDIF
+           CASE m.nuMbytes=6
+                IF (m.r_Byte1=m.b1) .AND. (m.r_Byte2=m.b2) .AND.  ;
+                   (m.r_Byte3=m.b3) .AND. (m.r_Byte4=m.b4) .AND.  ;
+                   (m.r_Byte5=m.b5) .AND. (m.r_Byte6=m.b6)
+                     EXIT
+                ELSE
+                     IF m.r_Byte1=128 .AND. m.r_Byte2=182 .AND.  ;
+                        (m.r_Byte3=3 .OR. m.r_Byte3=1) .AND. m.r_Byte4=0  ;
+                        .AND. m.r_Byte5=2 .AND. m.r_Byte6=0
+                          WAIT WINDOW NOWAIT 'Driver Seat Occupied Detected !'
+                     ELSE
+                          WAIT WINDOW NOWAIT 'Something ELSE Detected !'
+                          m.reSult = .F.
+                     ENDIF
+                ENDIF
+           CASE m.nuMbytes=5
+                IF (m.r_Byte1=m.b1) .AND. (m.r_Byte2=m.b2) .AND.  ;
+                   (m.r_Byte3=m.b3) .AND. (m.r_Byte4=m.b4) .AND.  ;
+                   (m.r_Byte5=m.b5)
+                     EXIT
+                ELSE
+                     IF m.r_Byte1=128 .AND. m.r_Byte2=182 .AND.  ;
+                        (m.r_Byte3=3 .OR. m.r_Byte3=1) .AND. m.r_Byte4=0  ;
+                        .AND. m.r_Byte5=2 .AND. m.r_Byte6=0
+                          WAIT WINDOW NOWAIT 'Driver Seat Occupied Detected !'
+                     ELSE
+                          WAIT WINDOW NOWAIT 'Something ELSE Detected !'
+                          m.reSult = .F.
+                     ENDIF
+                ENDIF
+           CASE m.nuMbytes=4
+                IF (m.r_Byte1=m.b1) .AND. (m.r_Byte2=m.b2) .AND.  ;
+                   (m.r_Byte3=m.b3) .AND. (m.r_Byte4=m.b4)
+                     EXIT
+                ELSE
+                     IF m.r_Byte1=128 .AND. m.r_Byte2=182 .AND.  ;
+                        (m.r_Byte3=3 .OR. m.r_Byte3=1) .AND. m.r_Byte4=0  ;
+                        .AND. m.r_Byte5=2 .AND. m.r_Byte6=0
+                          WAIT WINDOW NOWAIT 'Driver Seat Occupied Detected !'
+                     ELSE
+                          WAIT WINDOW NOWAIT 'Something ELSE Detected !'
+                          m.reSult = .F.
+                     ENDIF
+                ENDIF
+           CASE m.nuMbytes=3
+                IF (m.r_Byte1=m.b1) .AND. (m.r_Byte2=m.b2) .AND.  ;
+                   (m.r_Byte3=m.b3)
+                     EXIT
+                ELSE
+                     IF m.r_Byte1=128 .AND. m.r_Byte2=182 .AND.  ;
+                        (m.r_Byte3=3 .OR. m.r_Byte3=1) .AND. m.r_Byte4=0  ;
+                        .AND. m.r_Byte5=2 .AND. m.r_Byte6=0
+                          WAIT WINDOW NOWAIT 'Driver Seat Occupied Detected !'
+                     ELSE
+                          WAIT WINDOW NOWAIT 'Something ELSE Detected !'
+                          m.reSult = .F.
+                     ENDIF
+                ENDIF
+           CASE m.nuMbytes=2
+                IF (m.r_Byte1=m.b1) .AND. (m.r_Byte2=m.b2)
+                     EXIT
+                ELSE
+                     IF m.r_Byte1=128 .AND. m.r_Byte2=182 .AND.  ;
+                        (m.r_Byte3=3 .OR. m.r_Byte3=1) .AND. m.r_Byte4=0  ;
+                        .AND. m.r_Byte5=2 .AND. m.r_Byte6=0
+                          WAIT WINDOW NOWAIT 'Driver Seat Occupied Detected !'
+                     ELSE
+                          WAIT WINDOW NOWAIT 'Something ELSE Detected !'
+                          m.reSult = .F.
+                     ENDIF
+                ENDIF
+           CASE m.nuMbytes=1
+                IF (m.r_Byte1=m.b1)
+                     EXIT
+                ELSE
+                     IF m.r_Byte1=128 .AND. m.r_Byte2=182 .AND.  ;
+                        (m.r_Byte3=3 .OR. m.r_Byte3=1) .AND. m.r_Byte4=0  ;
+                        .AND. m.r_Byte5=2 .AND. m.r_Byte6=0
+                          WAIT WINDOW NOWAIT 'Driver Seat Occupied Detected !'
+                     ELSE
+                          WAIT WINDOW NOWAIT 'Something ELSE Detected !'
+                          m.reSult = .F.
+                     ENDIF
+                ENDIF
+      ENDCASE
+      m.nrEtb = geTscp()
+ ENDDO
+ IF swGtimer(8)=0
+      m.reSult = .F.
+ ENDIF
+ = swDsytimer(8)
+ RETURN m.reSult
+
+
+
+ ***** RDR SERIAL METER ROUTINE FOLLOWS:
+ *****
+ FUNCTION READ_METER
+	PRIVATE TextOut
+  	PRIVATE TextIn
+	PRIVATE result
+	
+	TextOut = "N0TA*"			&& Meter command to read value  
+	TextIn = ""					&& Text In from Meter
+	result = .F.				&& Default to Fail
+	  
+  	*--- Flush the RX Buffer & Send Command
+  	= swFlushrx(coM3)
+  	= swTxString(coM3, TextOut)
+
+  	*--- Wait for response from Meter & Validate it
+  	= swRxString(Com3, @TextIn, 15, 13, 1, SWFALSE, SWFALSE, 0, 283)
+  	m.meter = TextIn
+	SHOW GETS
+	IF VAL(m.meter) < 1.0 then
+		m.result = .T.
+	ENDIF
+
+ RETURN m.result 
+ *****
+ *****
+ 
+ 
+ 

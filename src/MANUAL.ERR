@@ -1,0 +1,96 @@
+
+Line 21/2 ?
+  DEFINE POPUP memchoice FROM 8, 37 TITLE "Memory" SHADOW MARGIN
+?=FROM 8, 37
+
+Line 21/3 ?
+  DEFINE POPUP memchoice FROM 8, 37 TITLE "Memory" SHADOW MARGIN
+?=TITLE "Memory"
+
+Line 21/4 ?
+  DEFINE POPUP memchoice FROM 8, 37 TITLE "Memory" SHADOW MARGIN
+?=SHADOW
+
+Line 25/2 ?
+  DEFINE POPUP memchoice FROM 8, 37 TITLE "Memory" SHADOW MARGIN
+?=FROM 8, 37
+
+Line 25/3 ?
+  DEFINE POPUP memchoice FROM 8, 37 TITLE "Memory" SHADOW MARGIN
+?=TITLE "Memory"
+
+Line 25/4 ?
+  DEFINE POPUP memchoice FROM 8, 37 TITLE "Memory" SHADOW MARGIN
+?=SHADOW
+
+Line 31/2 ?
+  DEFINE POPUP memwhich FROM 9, 45 TITLE "Which?" SHADOW MARGIN
+?=FROM 9, 45
+
+Line 31/3 ?
+  DEFINE POPUP memwhich FROM 9, 45 TITLE "Which?" SHADOW MARGIN
+?=TITLE "Which?"
+
+Line 31/4 ?
+  DEFINE POPUP memwhich FROM 9, 45 TITLE "Which?" SHADOW MARGIN
+?=SHADOW
+
+Line 36/2 ?
+  DEFINE POPUP memwhich FROM 9, 45 TITLE "Which?" SHADOW MARGIN
+?=FROM 9, 45
+
+Line 36/3 ?
+  DEFINE POPUP memwhich FROM 9, 45 TITLE "Which?" SHADOW MARGIN
+?=TITLE "Which?"
+
+Line 36/4 ?
+  DEFINE POPUP memwhich FROM 9, 45 TITLE "Which?" SHADOW MARGIN
+?=SHADOW
+
+Line 43/2 ?
+DEFINE POPUP front FROM 15, 61 TITLE "Front" SHADOW MARGIN
+?=FROM 15, 61
+
+Line 43/3 ?
+DEFINE POPUP front FROM 15, 61 TITLE "Front" SHADOW MARGIN
+?=TITLE "Front"
+
+Line 43/4 ?
+DEFINE POPUP front FROM 15, 61 TITLE "Front" SHADOW MARGIN
+?=SHADOW
+
+Line 47/2 ?
+DEFINE POPUP recline FROM 0, 17 TITLE "Recline" SHADOW MARGIN
+?=FROM 0, 17
+
+Line 47/3 ?
+DEFINE POPUP recline FROM 0, 17 TITLE "Recline" SHADOW MARGIN
+?=TITLE "Recline"
+
+Line 47/4 ?
+DEFINE POPUP recline FROM 0, 17 TITLE "Recline" SHADOW MARGIN
+?=SHADOW
+
+Line 51/2 ?
+DEFINE POPUP back FROM 15, 8 TITLE "Back" SHADOW MARGIN
+?=FROM 15, 8
+
+Line 51/3 ?
+DEFINE POPUP back FROM 15, 8 TITLE "Back" SHADOW MARGIN
+?=TITLE "Back"
+
+Line 51/4 ?
+DEFINE POPUP back FROM 15, 8 TITLE "Back" SHADOW MARGIN
+?=SHADOW
+
+Line 55/2 ?
+DEFINE POPUP horizontal FROM 19, 32 TITLE "Horizontal" SHADOW MARGIN
+?=FROM 19, 32
+
+Line 55/3 ?
+DEFINE POPUP horizontal FROM 19, 32 TITLE "Horizontal" SHADOW MARGIN
+?=TITLE "Horizontal"
+
+Line 55/4 ?
+DEFINE POPUP horizontal FROM 19, 32 TITLE "Horizontal" SHADOW MARGIN
+?=SHADOW

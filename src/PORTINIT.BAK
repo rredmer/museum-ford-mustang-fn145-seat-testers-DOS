@@ -1,0 +1,83 @@
+*
+FUNCTION poRtinit
+ PARAMETER loPen
+ PRIVATE cvArname
+ m.cvArname = ''
+ PRIVATE reSult
+ m.reSult = .T.
+ PRIVATE baUdvar, paRityvar, daTavar, stOpvar
+ IF  .NOT. m.loPen
+ 
+ 	  ***** RDR CLOSE COMM 3 FOLLOWS:
+ 	  *****
+      = swClosecom(2,0)
+      *****
+      
+      
+      
+      = swClosecom(1,0)
+      = swClosecom(0,0)
+      = swDaltimer()
+ ELSE
+ 
+ 
+ 	  ***** RDR OPEN COMM 3 FOLLOWS:
+ 	  *****
+      cvArname = 'nP_Ret2'
+      STORE SWOpenCom(2, 400, 1000, 0) TO &cVarName.
+      IF &cVarName <> SWCSUCCESSFUL
+           DO CASE
+                case &cVarName=SWCNOINTSPECIFIED
+                     ? 'No Interrupt Specified on COM2.'
+                case &cVarName=SWCNOUARTPRESENT
+                     ? 'No UART Present on COM2.'
+                case &cVarName=SWCNOINTAVAILABLE
+                     ? 'No Interrupt Available COM2.'
+                case &cVarName=SWCNOMEMORY
+                     ? 'No Memory on COM2.'
+           ENDCASE
+           m.reSult = .F.
+      ELSE
+           = swSetuart(2,9600,swParityma,8,1)
+      ENDIF
+	  *****
+ 
+ 
+ 
+      cvArname = 'nP_Ret2'
+      STORE SWOpenCom(1, 400, 1000, 0) TO &cVarName.
+      IF &cVarName <> SWCSUCCESSFUL
+           DO CASE
+                case &cVarName=SWCNOINTSPECIFIED
+                     ? 'No Interrupt Specified on COM2.'
+                case &cVarName=SWCNOUARTPRESENT
+                     ? 'No UART Present on COM2.'
+                case &cVarName=SWCNOINTAVAILABLE
+                     ? 'No Interrupt Available COM2.'
+                case &cVarName=SWCNOMEMORY
+                     ? 'No Memory on COM2.'
+           ENDCASE
+           m.reSult = .F.
+      ELSE
+           = swSetuart(1,9600,swParityev,7,1)
+      ENDIF
+      cvArname = 'nP_Ret1'
+      STORE SWOpenCom(0, 100, 100, 0) TO &cVarName.
+      IF &cVarName <> SWCSUCCESSFUL
+           DO CASE
+                case &cVarName=SWCNOINTSPECIFIED
+                     ? 'No Interrupt Specified on COM1.'
+                case &cVarName=SWCNOUARTPRESENT
+                     ? 'No UART Present on COM1.'
+                case &cVarName=SWCNOINTAVAILABLE
+                     ? 'No Interrupt Available on COM1.'
+                case &cVarName=SWCNOMEMORY
+                     ? 'No Memory on COM1.'
+           ENDCASE
+           m.reSult = .F.
+      ELSE
+           = swSetuart(0,9600,swParityma,8,1)
+      ENDIF
+ ENDIF
+ RETURN m.reSult
+*
