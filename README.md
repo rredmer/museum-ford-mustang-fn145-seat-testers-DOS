@@ -1,30 +1,62 @@
-# Ford Mustang FN-145 Seat Testers (DOS)
+<a href="https://developer.microsoft.com">![Microsoft](https://img.shields.io/badge/Microsoft-666666?style=for-the-badge&logo=microsoft&logoColor=white)</a>
+<a href="https://winworldpc.com/product/ms-dos/622">![DOS v6.22](https://img.shields.io/badge/DOS%20v6.22-black?style=for-the-badge)</a>
+<a href="https://winworldpc.com/product/foxpro/26">![FoxPro v2.6](https://img.shields.io/badge/FoxPro%20v2.6-red?style=for-the-badge)</a>
+<a href="https://winworldpc.com/product/watcom-c-c/110b">![Watcom C/C++](https://img.shields.io/badge/WatCom%20C/C++%20v11-purple?style=for-the-badge)</a>
+
+# Ford Mustang FN-145 Seat Testers (Motorola)
 
 The Ford Motor Company FN145 Mustang and Lincoln Town Car End of Line Seat Testers (Motorola 1995)
 
 ## Introduction
-This project showcases the FN145 Mustang and Lincoln Town Car End of Line Seat Testers developed by Motorola in 1995 based on code developed by Ronald Redmer in 1992. These testers were used to ensure the quality and functionality of the seats before they left the production line. In 1998, Ford Motor Company contracted Ronald Redmer to support, maintain, and enhance the software to support new seat modules, new heating pads, etc. In 2001, Ford Motor Company contracted Redmer Controls to design and manufacture new seat testers for this production line which included the first heating & cooling systems in automotive seating.
+This project showcases the FN145 Mustang and Lincoln Town Car End of Line Seat Testers developed by Motorola in 1995 based on code developed by Ronald Redmer in 1992. These testers were used to ensure the quality and functionality of the seats before they left the production line. In 1998, Ford Motor Company contracted Ronald Redmer to support, maintain, and enhance the software to support new seat modules, new heating pads, etc. In 2001, Ford Motor Company contracted Redmer Controls to design and manufacture new seat testers for this production line which included the first heating & cooling systems in automotive
 
 ## Features
-- Comprehensive seat testing for FN145 Mustang and Lincoln Town Car
+- Comprehensive seat testing for FN145 Mustang and Lincoln Town Car seats
 - Developed using Motorola technology
 - Ensures quality and functionality of vehicle seats
 - Historical significance in automotive manufacturing
 
-## Installation
-To set up the project, follow these steps:
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/yourusername/museum-ford-mustang-fn145-seat-testers-DOS.git
-    ```
-2. Navigate to the project directory:
-    ```bash
-    cd museum-ford-mustang-fn145-seat-testers-DOS
-    ```
-3. Follow any additional setup instructions provided in the project documentation.
+## In Production
+<img src="Images/Visteon Motorola Seat Tester -Carriers.JPG" width="400" alt="Motorola FN-145 Seat Tester in production, assembly line 1."/>
+<img src="Images/Visteon Motorola Seat Tester -Carriers 2.JPG" width="400" alt="Motorola FN-145 Seat Tester in production, assembly line 2."/>
 
-## Usage
-To use the seat testers, follow the instructions provided in the user manual. Ensure that all connections are properly made and that the testing environment is set up according to the specifications.
+## Contact
+<a href="mailto:Ronald.Redmer@gmail.com">![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)</a>
+<a href="https://signal.link/call/#key=kmxm-qmqs-zcxx-znxm-tbpm-fgpf-xxzt-gsdh">![Signal](https://img.shields.io/badge/Signal-3A76F0?style=for-the-badge&logo=signal&logoColor=white)</a>
+<a href="https://t.me/RonaldRedmer">![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)</a>
+<a href="https://wa.me/12484972761">![WhatsApp](https://img.shields.io/badge/WhatsApp-25D366?style=for-the-badge&logo=WhatsApp&logoColor=white)</a>
+
+### Follow
+<a href="https://bsky.app/profile/rredmer.bsky.social">![BlueSky](https://img.shields.io/badge/Bluesky-0285FF?logo=bluesky&logoColor=fff&style=for-the-badge)</a>
+<a href="https://devrant.com/users/rredmer">![DevRant](https://img.shields.io/badge/devRant-F99A66?style=for-the-badge&logo=devrant&logoColor=white)</a>
+<a href="https://discordapp.com/users/RedZone">![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)</a>
+<a href="https://matrix.to/#/@ronaldredmer:matrix.org">![Element](https://img.shields.io/badge/Element-0DBD8B?style=for-the-badge&logo=element&logoColor=white)</a>
+<a href="https://www.kaggle.com/ronredmer">![Kaggle](https://img.shields.io/badge/Kaggle-20BEFF?style=for-the-badge&logo=Kaggle&logoColor=white)</a>
+<a href="https://www.linkedin.com/in/rredmer/">![LinkIn Profile](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)</a>
+<a href="https://mastodon.social/@RonaldRedmer">![Mastodon](https://img.shields.io/badge/Mastodon-6364FF?style=for-the-badge&logo=Mastodon&logoColor=white)</a>
+<a href="https://www.quora.com/profile/Ron-Redmer">![Quora Profile](https://img.shields.io/badge/Quora-%23B92B27.svg?&style=for-the-badge&logo=Quora&logoColor=white)</a>
+<a href="https://www.reddit.com/user/RonaldRedmer/">![Reddit](https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white)</a>
+<a href="https://stackoverflow.com/users/29130217/ron-redmer">![Stack Overflow](https://img.shields.io/badge/Stack_Overflow-FE7A16?style=for-the-badge&logo=stack-overflow&logoColor=white)</a>
+<a href="https://www.tumblr.com/blog/ronaldredmer">![Tumblr](https://img.shields.io/badge/Tumblr-%2336465D.svg?&style=for-the-badge&logo=Tumblr&logoColor=white)</a>
+<a href="https://www.twitch.tv/ronaldredmer">![Twitch](https://img.shields.io/badge/Twitch-9146FF?style=for-the-badge&logo=twitch&logoColor=white)</a>
+<a href="https://www.youtube.com/@RonaldRedmer">![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)</a>
+
+<a href="https://github.com/rredmer">![Github](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)</a>
+<a href="https://dev.to/rredmer">![Dev.to](https://img.shields.io/badge/dev.to-0A0A0A?style=for-the-badge&logo=devdotto&logoColor=white)</a>
+<a href="https://medium.com/@ronald.redmer">![Medium](https://img.shields.io/badge/Medium-12100E?style=for-the-badge&logo=medium&logoColor=white)</a>
+<a href="https://x.com/ron_redmer">![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/ron_redmer)</a>
+
+### Sponsor
+<a href="https://github.com/sponsors/rredmer">![Github Sponsor](https://img.shields.io/badge/sponsor-30363D?style=for-the-badge&logo=GitHub-Sponsors&logoColor=#white)</a>
+<a href="https://buymeacoffee.com/rredmer">![Buy me a cofee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)</a>
+<a href="https://patreon.com/TechnologyPlayground">![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)</a>
+<a href="https://paypal.me/RonaldRedmer">![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)</a>
+<a href="https://donate.stripe.com/9AQg0G6on55a1pK288">![Stripe](https://img.shields.io/badge/Stripe-626CD9?style=for-the-badge&logo=Stripe&logoColor=white)</a>
+
+### Web
+<a href="https://ronaldredmer.com">![Ronald Redmer Portfolio](https://img.shields.io/badge/Ronald%20Redmer%20Portfolio-blue?style=for-the-badge)</a>
+<a href="https://a1si.com">![A1 Systems Integrators LLC](https://img.shields.io/badge/A1%20Systems%20Integrators-blue?style=for-the-badge)</a>
+<a href="https://techproductsgroup.com">![Technical Products Group](https://img.shields.io/badge/Technical%20Products%20Group-blue?style=for-the-badge)</a>
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
